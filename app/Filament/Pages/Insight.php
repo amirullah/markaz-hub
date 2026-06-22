@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\ProfitService;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -21,11 +22,9 @@ class Insight extends Page
 
     protected static ?int $navigationSort = 5;
 
-    private const PROFIT = 'product_revenue + other_income - (cogs + admin_fee + shipping_cost_seller + voucher_seller_borne + dropship_cost + other_cost)';
-
     public function getViewData(): array
     {
-        $profit = self::PROFIT;
+        $profit = ProfitService::SQL_PROFIT;
 
         // Pesanan SELESAI yang RUGI (laba < 0) — kandidat dievaluasi.
         $pesananRugi = Order::query()

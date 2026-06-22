@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Order;
+use App\Services\ProfitService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +17,7 @@ class StatsOverview extends StatsOverviewWidget
         $ops = Order::query()->whereNotIn('status', ['CANCELLED', 'RETURNED']);
 
         $omzet = (clone $ops)->sum(DB::raw('product_revenue + other_income'));
-        $laba = (clone $ops)->sum(DB::raw(
-            'product_revenue + other_income - (cogs + admin_fee + shipping_cost_seller + voucher_seller_borne + dropship_cost + other_cost)'
-        ));
+        $laba = (clone $ops)->sum(DB::raw(ProfitService::SQL_PROFIT));
         $jumlah = (clone $ops)->count();
         $aov = $jumlah > 0 ? $omzet / $jumlah : 0;
         $returBatal = Order::query()->whereIn('status', ['CANCELLED', 'RETURNED'])->count();
@@ -42,7 +41,7 @@ class StatsOverview extends StatsOverviewWidget
                 ->chart($sparkLaba ?: [0, 0])
                 ->color($laba < 0 ? 'danger' : 'success'),
             Stat::make('Rata-rata / Pesanan', $rp($aov))
-                ->description('AOV')
+                ->description('Nilai rata-rata per pesanan')
                 ->descriptionIcon('heroicon-m-calculator')
                 ->color('info'),
             Stat::make('Retur + Batal', number_format($returBatal, 0, ',', '.'))
@@ -59,7 +58,7 @@ class StatsOverview extends StatsOverviewWidget
             ->whereNotIn('status', ['CANCELLED', 'RETURNED'])
             ->selectRaw("DATE_FORMAT(order_date, '%Y-%m') ym")
             ->selectRaw('SUM(product_revenue + other_income) omzet')
-            ->selectRaw('SUM(product_revenue + other_income - (cogs + admin_fee + shipping_cost_seller + voucher_seller_borne + dropship_cost + other_cost)) laba')
+            ->selectRaw('SUM(' . ProfitService::SQL_PROFIT . ') laba')
             ->groupBy('ym')->orderBy('ym')
             ->get()->keyBy('ym');
 

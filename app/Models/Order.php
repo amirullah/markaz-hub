@@ -22,8 +22,9 @@ class Order extends Model
             ->logOnlyDirty()->dontSubmitEmptyLogs()->useLogName('pesanan');
     }
 
+    // organization_id sengaja TIDAK fillable — diisi otomatis oleh BelongsToOrganization.
     protected $fillable = [
-        'organization_id', 'store_id', 'external_no', 'marketplace', 'status', 'fulfillment',
+        'store_id', 'external_no', 'marketplace', 'status', 'fulfillment',
         'order_date', 'buyer_name', 'product_revenue', 'shipping_charged_to_buyer', 'other_income',
         'cogs', 'admin_fee', 'shipping_cost_seller', 'voucher_seller_borne', 'dropship_cost',
         'other_cost', 'income_verified', 'note',

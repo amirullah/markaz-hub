@@ -15,6 +15,7 @@ class ProductsTable
     {
         return $table
             ->defaultSort('name')
+            ->modifyQueryUsing(fn ($query) => $query->with('supplier'))
             ->columns([
                 TextColumn::make('sku')
                     ->label('SKU')
@@ -27,12 +28,12 @@ class ProductsTable
                     ->limit(50),
                 TextColumn::make('cost_price')
                     ->label('HPP / Modal')
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state): string => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignEnd(),
                 TextColumn::make('dropship_cost')
                     ->label('Modal Dropship')
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state): string => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignEnd(),
                 TextColumn::make('supplier.name')

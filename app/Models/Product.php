@@ -12,8 +12,9 @@ class Product extends Model
 {
     use BelongsToOrganization, LogsActivity;
 
+    // organization_id sengaja TIDAK fillable — diisi otomatis oleh BelongsToOrganization.
     protected $fillable = [
-        'organization_id', 'sku', 'name', 'cost_price', 'dropship_cost', 'supplier_id', 'active',
+        'sku', 'name', 'cost_price', 'dropship_cost', 'supplier_id', 'active',
     ];
 
     public function getActivitylogOptions(): LogOptions

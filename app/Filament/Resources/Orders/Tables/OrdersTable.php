@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Services\ProfitService;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
@@ -69,23 +70,26 @@ class OrdersTable
                     }),
                 TextColumn::make('product_revenue')
                     ->label('Omzet')
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state): string => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignEnd(),
                 TextColumn::make('profit')
                     ->label('Laba')
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state): string => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->alignEnd()
                     ->weight('bold')
                     ->color(fn ($state): string => (float) $state < 0 ? 'danger' : 'success')
                     ->sortable(query: fn (Builder $q, string $direction): Builder => $q->orderByRaw(
-                        '(product_revenue + other_income - (cogs + admin_fee + shipping_cost_seller + voucher_seller_borne + dropship_cost + other_cost)) ' . $direction
+                        ProfitService::SQL_PROFIT . ' ' . $direction
                     )),
                 TextColumn::make('income_verified')
-                    ->label('Final?')
+                    ->label('Laba Final')
                     ->badge()
-                    ->formatStateUsing(fn ($state): string => $state ? '✓ final' : '≈ belum')
-                    ->color(fn ($state): string => $state ? 'success' : 'gray'),
+                    ->formatStateUsing(fn ($state): string => $state ? 'Final' : 'Estimasi')
+                    ->color(fn ($state): string => $state ? 'success' : 'gray')
+                    ->tooltip(fn ($state): string => $state
+                        ? 'Angka final (Laporan Penghasilan marketplace sudah masuk).'
+                        : 'Masih estimasi (belum ada Laporan Penghasilan).'),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -112,10 +116,10 @@ class OrdersTable
                         'DROPSHIP' => 'Dropship',
                     ]),
                 TernaryFilter::make('income_verified')
-                    ->label('Laba final')
+                    ->label('Laba Final')
                     ->placeholder('Semua')
-                    ->trueLabel('Sudah final')
-                    ->falseLabel('Belum (belum ada Laporan Penghasilan)'),
+                    ->trueLabel('Final')
+                    ->falseLabel('Estimasi (belum ada Laporan Penghasilan)'),
                 Filter::make('order_date')
                     ->schema([
                         DatePicker::make('from')->label('Dari tanggal'),

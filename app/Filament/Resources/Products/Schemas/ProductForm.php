@@ -6,36 +6,54 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 class ProductForm
 {
     public static function configure(Schema $schema): Schema
     {
+        // organization_id otomatis di-set ke organisasi user (BelongsToOrganization).
         return $schema
             ->components([
-                Select::make('organization_id')
-                    ->relationship('organization', 'name')
-                    ->required(),
                 TextInput::make('sku')
                     ->label('SKU')
-                    ->required(),
+                    ->placeholder('Kode unik produk, mis. 7RRSDOBK')
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn (Unique $rule) => $rule->where('organization_id', auth()->user()->organization_id),
+                    )
+                    ->validationMessages(['unique' => 'SKU ini sudah dipakai produk lain.']),
                 TextInput::make('name')
-                    ->required(),
+                    ->label('Nama Produk')
+                    ->required()
+                    ->maxLength(255),
                 TextInput::make('cost_price')
+                    ->label('HPP / Modal')
+                    ->helperText('Harga modal per unit (untuk pesanan SELF).')
                     ->required()
                     ->numeric()
-                    ->default(0.0)
-                    ->prefix('$'),
+                    ->minValue(0)
+                    ->default(0)
+                    ->prefix('Rp'),
                 TextInput::make('dropship_cost')
+                    ->label('Modal Dropship')
+                    ->helperText('Harga modal per unit jika dropship (mis. Jakmall).')
                     ->required()
                     ->numeric()
-                    ->default(0.0)
-                    ->prefix('$'),
+                    ->minValue(0)
+                    ->default(0)
+                    ->prefix('Rp'),
                 Select::make('supplier_id')
+                    ->label('Supplier')
                     ->relationship('supplier', 'name')
-                    ->default(null),
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('— opsional —'),
                 Toggle::make('active')
-                    ->required(),
+                    ->label('Aktif')
+                    ->default(true),
             ]);
     }
 }

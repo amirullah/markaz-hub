@@ -24,9 +24,18 @@ trait BelongsToOrganization
             }
         });
 
+        // Saat ada user login: PAKSA organization_id ke org user (timpa nilai apa pun
+        // dari form/input) — mencegah membuat data untuk tenant lain.
         static::creating(function ($model) {
-            if (empty($model->organization_id) && ($orgId = self::currentOrganizationId())) {
+            if ($orgId = self::currentOrganizationId()) {
                 $model->organization_id = $orgId;
+            }
+        });
+
+        // Cegah memindahkan record ke organisasi lain lewat edit.
+        static::updating(function ($model) {
+            if (self::currentOrganizationId() && $model->isDirty('organization_id')) {
+                $model->organization_id = $model->getOriginal('organization_id');
             }
         });
     }

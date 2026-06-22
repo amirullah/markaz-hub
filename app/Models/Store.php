@@ -12,7 +12,8 @@ class Store extends Model
 {
     use BelongsToOrganization, LogsActivity;
 
-    protected $fillable = ['organization_id', 'name', 'marketplace', 'active', 'note'];
+    // organization_id sengaja TIDAK fillable — diisi otomatis oleh BelongsToOrganization.
+    protected $fillable = ['name', 'marketplace', 'active', 'note'];
 
     public function getActivitylogOptions(): LogOptions
     {

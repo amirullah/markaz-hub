@@ -30,17 +30,30 @@ class GoogleAuthController extends Controller
             return redirect('/admin/login')->withErrors(['email' => 'Login Google gagal. Silakan coba lagi.']);
         }
 
-        $user = User::where('google_id', $g->getId())
-            ->orWhere('email', $g->getEmail())
-            ->first();
+        // Hanya percayai email yang SUDAH diverifikasi Google.
+        $emailVerified = (bool) ($g->user['email_verified'] ?? $g->user['verified_email'] ?? false);
+        if (! $g->getEmail() || ! $emailVerified) {
+            return redirect('/admin/login')->withErrors(['email' => 'Email Google Anda belum terverifikasi.']);
+        }
+
+        // 1) Login normal: cocokkan HANYA via google_id.
+        $user = User::where('google_id', $g->getId())->first();
 
         if (! $user) {
-            // Seller baru: buat organisasi (tenant) + user.
+            // 2) Email sudah dipakai akun lain (mis. akun berpassword) → JANGAN ambil
+            //    alih otomatis. Cegah account takeover lewat pencocokan email.
+            if (User::where('email', $g->getEmail())->exists()) {
+                return redirect('/admin/login')->withErrors([
+                    'email' => 'Email ini sudah terdaftar dengan metode lain. Hubungi admin untuk menautkan akun.',
+                ]);
+            }
+
+            // 3) Seller baru: buat organisasi (tenant) + user.
             $org = Organization::create([
                 'name' => $g->getName() ?: 'Toko Saya',
                 'active' => true,
             ]);
-            $user = User::create([
+            $user = (new User)->forceFill([
                 'organization_id' => $org->id,
                 'name' => $g->getName() ?: 'Pengguna',
                 'email' => $g->getEmail(),
@@ -49,15 +62,17 @@ class GoogleAuthController extends Controller
                 'password' => bcrypt(Str::random(40)),
                 'email_verified_at' => now(),
             ]);
+            $user->save();
         } else {
-            $user->forceFill([
-                'google_id' => $g->getId(),
-                'avatar' => $g->getAvatar(),
-            ])->save();
-            if (! $user->organization_id) {
-                $org = Organization::create(['name' => $user->name . ' — Toko', 'active' => true]);
-                $user->update(['organization_id' => $org->id]);
-            }
+            // Login berulang: perbarui avatar saja.
+            $user->forceFill(['avatar' => $g->getAvatar()])->save();
+        }
+
+        // 4) Pastikan organisasi AKTIF sebelum membuat sesi (jangan andalkan panel saja).
+        if (! $user->organization_id || ! optional($user->organization)->active) {
+            return redirect('/admin/login')->withErrors([
+                'email' => 'Akun/organisasi Anda tidak aktif. Hubungi admin.',
+            ]);
         }
 
         Auth::login($user, remember: true);

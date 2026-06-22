@@ -5,26 +5,42 @@ namespace App\Filament\Resources\Stores\Schemas;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 class StoreForm
 {
     public static function configure(Schema $schema): Schema
     {
+        // organization_id TIDAK ditampilkan: otomatis di-set ke organisasi user
+        // (trait BelongsToOrganization) — mencegah salah assign antar-tenant.
         return $schema
             ->components([
-                Select::make('organization_id')
-                    ->relationship('organization', 'name')
-                    ->required(),
                 TextInput::make('name')
-                    ->required(),
+                    ->label('Nama Toko')
+                    ->placeholder('mis. MarkazMall SBY')
+                    ->required()
+                    ->maxLength(190)
+                    ->unique(
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn (Unique $rule, Get $get) => $rule
+                            ->where('organization_id', auth()->user()->organization_id)
+                            ->where('marketplace', $get('marketplace')),
+                    )
+                    ->validationMessages(['unique' => 'Toko dengan nama & channel ini sudah ada.']),
                 Select::make('marketplace')
-                    ->options(['SHOPEE' => 'S h o p e e', 'TOKOPEDIA' => 'T o k o p e d i a', 'TIKTOK' => 'T i k t o k'])
-                    ->required(),
+                    ->label('Channel')
+                    ->options(['SHOPEE' => 'Shopee', 'TOKOPEDIA' => 'Tokopedia', 'TIKTOK' => 'TikTok'])
+                    ->required()
+                    ->native(false),
                 Toggle::make('active')
-                    ->required(),
+                    ->label('Aktif')
+                    ->helperText('Nonaktifkan untuk menyembunyikan toko tanpa menghapus data.')
+                    ->default(true),
                 TextInput::make('note')
-                    ->default(null),
+                    ->label('Catatan')
+                    ->maxLength(255),
             ]);
     }
 }

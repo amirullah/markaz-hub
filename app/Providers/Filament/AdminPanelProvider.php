@@ -31,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->brandName('MarkazHub')
             ->font('Inter')
+            ->darkMode(false) // tema biru/clean terang; halaman custom memakai gaya terang
             ->colors([
                 'primary' => Color::Blue,
                 'info' => Color::Sky,

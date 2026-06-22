@@ -17,6 +17,16 @@ namespace App\Services;
  */
 class ProfitService
 {
+    /**
+     * Ekspresi SQL laba — HARUS identik dengan profit(). Dipakai untuk sort/agregat
+     * (orderByRaw/whereRaw/selectRaw) agar formula TIDAK diketik ulang di banyak tempat
+     * (cegah divergensi dari sumber kebenaran).
+     */
+    public const SQL_PROFIT = '(product_revenue + other_income - (cogs + admin_fee + shipping_cost_seller + voucher_seller_borne + dropship_cost + other_cost))';
+
+    /** Ekspresi SQL net (laba sebelum modal). */
+    public const SQL_NET = '(product_revenue + other_income - (admin_fee + shipping_cost_seller + voucher_seller_borne + other_cost))';
+
     /** Laba bersih per pesanan (setelah modal). */
     public function profit(array|object $o): float
     {
