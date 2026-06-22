@@ -46,7 +46,8 @@ class AdminFeeEstimator
      */
     public function applyToOrg(int $orgId): array
     {
-        $orders = Order::query()
+        $orders = Order::withoutGlobalScopes()
+            ->where('organization_id', $orgId)
             ->where('income_verified', false)
             ->where('admin_fee', 0)
             ->with('items.product.category')
