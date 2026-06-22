@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Widgets\OrdersStats;
 use App\Services\AdminFeeEstimator;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -11,6 +12,14 @@ use Filament\Resources\Pages\ListRecords;
 class ListOrders extends ListRecords
 {
     protected static string $resource = OrderResource::class;
+
+    // Kartu total di ATAS tabel (mengikuti filter).
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            OrdersStats::class,
+        ];
+    }
 
     // Pesanan masuk lewat Import (tanpa tombol "Buat"). Aksi: isi estimasi biaya admin.
     protected function getHeaderActions(): array

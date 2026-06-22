@@ -24,6 +24,15 @@ class RiwayatPerubahan extends Page
      */
     public const CHANGELOG = [
         [
+            'version' => '1.9',
+            'date' => '23 Jun 2026',
+            'title' => 'Tampilan Pesanan lebih praktis',
+            'changes' => [
+                'Total pesanan kini tampil sebagai kartu menarik di ATAS tabel (Jumlah Pesanan, Total Omzet, Total Laba) dan mengikuti filter aktif.',
+                'Filter ditampilkan langsung di atas tabel & berlaku seketika (tanpa tombol terapkan) — lebih praktis, tetap bisa filter detail.',
+            ],
+        ],
+        [
             'version' => '1.8',
             'date' => '23 Jun 2026',
             'title' => 'Detail produk & total pesanan',
