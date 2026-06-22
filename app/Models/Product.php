@@ -14,7 +14,7 @@ class Product extends Model
 
     // organization_id sengaja TIDAK fillable — diisi otomatis oleh BelongsToOrganization.
     protected $fillable = [
-        'sku', 'name', 'cost_price', 'dropship_cost', 'supplier_id', 'active',
+        'sku', 'name', 'cost_price', 'dropship_cost', 'supplier_id', 'category_id', 'active',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -34,5 +34,10 @@ class Product extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 }

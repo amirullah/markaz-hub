@@ -15,7 +15,7 @@ class ProductsTable
     {
         return $table
             ->defaultSort('name')
-            ->modifyQueryUsing(fn ($query) => $query->with('supplier'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['supplier', 'category']))
             ->columns([
                 TextColumn::make('sku')
                     ->label('SKU')
@@ -36,6 +36,12 @@ class ProductsTable
                     ->formatStateUsing(fn ($state): string => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignEnd(),
+                TextColumn::make('category.name')
+                    ->label('Kategori')
+                    ->badge()
+                    ->color('info')
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('supplier.name')
                     ->label('Supplier')
                     ->placeholder('—')
