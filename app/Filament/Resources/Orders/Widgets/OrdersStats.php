@@ -17,6 +17,10 @@ class OrdersStats extends StatsOverviewWidget
 {
     use InteractsWithPageTable;
 
+    // Render inline (bukan lazy) → ikut siklus halaman tabel; menghindari bug
+    // hydration Livewire (tableColumnSearches null) saat lazy-load terpisah.
+    protected static bool $isLazy = false;
+
     protected function getTablePage(): string
     {
         return ListOrders::class;

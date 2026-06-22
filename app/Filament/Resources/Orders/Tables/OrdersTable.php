@@ -7,6 +7,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
@@ -103,17 +104,21 @@ class OrdersTable
                         'PAID' => 'Dibayar',
                         'PENDING' => 'Menunggu',
                     ]),
-                SelectFilter::make('channel')
-                    ->label('Channel')
-                    ->options([
-                        'SHOPEE' => 'Shopee',
-                        'TOKOTIKTOK' => 'Tokopedia/TikTok',
+                Filter::make('channel')
+                    ->schema([
+                        Select::make('value')
+                            ->label('Channel')
+                            ->options([
+                                'SHOPEE' => 'Shopee',
+                                'TOKOTIKTOK' => 'Tokopedia/TikTok',
+                            ])
+                            ->placeholder('Semua'),
                     ])
-                    ->query(fn (Builder $q, array $data): Builder => $q->when(
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
                         $data['value'] ?? null,
-                        fn (Builder $q, $v): Builder => $v === 'SHOPEE'
-                            ? $q->where('marketplace', 'SHOPEE')
-                            : $q->whereIn('marketplace', ['TOKOPEDIA', 'TIKTOK']),
+                        fn (Builder $query, $v): Builder => $v === 'SHOPEE'
+                            ? $query->where('marketplace', 'SHOPEE')
+                            : $query->whereIn('marketplace', ['TOKOPEDIA', 'TIKTOK']),
                     )),
                 SelectFilter::make('fulfillment')
                     ->label('Pemenuhan')
@@ -126,20 +131,24 @@ class OrdersTable
                     ->placeholder('Semua')
                     ->trueLabel('Final')
                     ->falseLabel('Estimasi (belum ada Laporan Penghasilan)'),
-                SelectFilter::make('periode')
-                    ->label('Periode')
-                    ->options([
-                        'minggu_ini' => 'Minggu ini',
-                        'bulan_ini' => 'Bulan ini',
-                        'tahun_ini' => 'Tahun ini',
-                        '30hari' => '30 hari terakhir',
-                        'minggu_lalu' => 'Minggu lalu',
-                        'bulan_lalu' => 'Bulan lalu',
-                        'tahun_lalu' => 'Tahun lalu',
+                Filter::make('periode')
+                    ->schema([
+                        Select::make('value')
+                            ->label('Periode')
+                            ->options([
+                                'minggu_ini' => 'Minggu ini',
+                                'bulan_ini' => 'Bulan ini',
+                                'tahun_ini' => 'Tahun ini',
+                                '30hari' => '30 hari terakhir',
+                                'minggu_lalu' => 'Minggu lalu',
+                                'bulan_lalu' => 'Bulan lalu',
+                                'tahun_lalu' => 'Tahun lalu',
+                            ])
+                            ->placeholder('Semua'),
                     ])
-                    ->query(fn (Builder $q, array $data): Builder => $q->when(
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
                         $data['value'] ?? null,
-                        fn (Builder $q, $v): Builder => self::applyPeriode($q, $v),
+                        fn (Builder $query, $v): Builder => self::applyPeriode($query, $v),
                     )),
                 Filter::make('order_date')
                     ->label('Rentang tanggal kustom')
@@ -147,15 +156,14 @@ class OrdersTable
                         DatePicker::make('from')->label('Dari tanggal')->native(false),
                         DatePicker::make('until')->label('Sampai tanggal')->native(false),
                     ])
-                    ->query(fn (Builder $q, array $data): Builder => $q
-                        ->when($data['from'] ?? null, fn (Builder $q, $d): Builder => $q->whereDate('order_date', '>=', $d))
-                        ->when($data['until'] ?? null, fn (Builder $q, $d): Builder => $q->whereDate('order_date', '<=', $d))),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['from'] ?? null, fn (Builder $query, $d): Builder => $query->whereDate('order_date', '>=', $d))
+                        ->when($data['until'] ?? null, fn (Builder $query, $d): Builder => $query->whereDate('order_date', '<=', $d))),
                 TrashedFilter::make()->label('Terhapus'),
             ])
-            ->filtersLayout(FiltersLayout::AboveContent)
-            ->filtersFormColumns(3)
+            ->filtersLayout(FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(4)
             ->deferFilters(false)
-            ->persistFiltersInSession()
             ->recordActions([
                 ViewAction::make(),
             ])
