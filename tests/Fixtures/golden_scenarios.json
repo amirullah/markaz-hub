@@ -1,0 +1,82 @@
+{
+  "_doc": "GOLDEN TEST — kunci kebenaran perhitungan laba v1 (sudah diaudit benar). Setiap skenario: input kolom finansial pesanan -> expected_profit. ProfitService v2 (Laravel) WAJIB menghasilkan angka IDENTIK untuk input yang sama (selisih 0). Angka mencerminkan kasus NYATA yang sudah diverifikasi ke file marketplace.",
+  "_formula": "profit = (product_revenue + other_income) - (cogs + admin_fee + shipping_cost_seller + voucher_seller_borne + dropship_cost + other_cost)",
+  "_net_before_modal": "net = product_revenue + other_income - admin_fee - shipping_cost_seller - voucher_seller_borne - other_cost  (harus == uang bersih marketplace utk pesanan verified)",
+  "scenarios": [
+    {
+      "id": "self_completed_basic",
+      "label": "SELF selesai, 1 item, ada HPP",
+      "why": "Kasus paling umum: laba = net - modal",
+      "input": { "product_revenue": 100000, "admin_fee": 20000, "voucher_seller_borne": 2000, "other_cost": 3000, "cogs": 60000 },
+      "expected_profit": 15000,
+      "expected_net": 75000
+    },
+    {
+      "id": "self_multi_item",
+      "label": "SELF selesai, banyak item (cogs total)",
+      "why": "cogs = jumlah semua item",
+      "input": { "product_revenue": 200000, "admin_fee": 30000, "cogs": 120000 },
+      "expected_profit": 50000
+    },
+    {
+      "id": "self_with_other_income",
+      "label": "SELF + pendapatan lain",
+      "why": "other_income ikut menambah revenue",
+      "input": { "product_revenue": 50000, "other_income": 2000, "admin_fee": 8000, "cogs": 30000 },
+      "expected_profit": 14000
+    },
+    {
+      "id": "dropship_real_260509UT4XAG92",
+      "label": "Dropship Shopee (kasus nyata) — rugi tipis",
+      "why": "Dropship: cogs=0, modal=dropship_cost (Total Transaksi Jakmall). Net < modal Jakmall -> rugi nyata.",
+      "input": { "product_revenue": 85306, "admin_fee": 21735, "voucher_seller_borne": 2434, "dropship_cost": 71000, "cogs": 0 },
+      "expected_profit": -9863,
+      "expected_net": 61137
+    },
+    {
+      "id": "dropship_with_partner_fee",
+      "label": "Dropship untung (modal Jakmall termasuk biaya mitra)",
+      "why": "dropship_cost = produk + mitra + tambahan",
+      "input": { "product_revenue": 120000, "admin_fee": 25000, "dropship_cost": 80000, "cogs": 0 },
+      "expected_profit": 15000
+    },
+    {
+      "id": "returned_full_refund_583039",
+      "label": "Retur refund penuh (kasus nyata) — laba 0",
+      "why": "Barang kembali ke penjual: cogs=0. Refund penuh -> net 0 -> laba 0 (BUKAN minus).",
+      "input": { "product_revenue": 278764, "other_cost": 278764, "admin_fee": 0, "cogs": 0 },
+      "expected_profit": 0,
+      "expected_net": 0
+    },
+    {
+      "id": "returned_shipping_loss_583915",
+      "label": "Retur dengan rugi ongkir (kasus nyata)",
+      "why": "Retur tapi penjual tanggung ongkir bolak-balik -> net negatif. cogs=0 (barang kembali).",
+      "input": { "product_revenue": 42629, "admin_fee": 50445, "other_cost": 42629, "cogs": 0 },
+      "expected_profit": -50445,
+      "expected_net": -50445
+    },
+    {
+      "id": "cancelled_all_zero",
+      "label": "Dibatalkan (tak jadi dikirim) — laba 0",
+      "why": "Batal: semua finansial dinolkan, laba 0 (jangan minus).",
+      "input": { "product_revenue": 0, "admin_fee": 0, "cogs": 0, "dropship_cost": 0, "other_cost": 0 },
+      "expected_profit": 0
+    },
+    {
+      "id": "completed_bulk_loss_582752",
+      "label": "Selesai bulk 48 unit (kasus nyata) — rugi ongkir besar",
+      "why": "Jual 48 unit; ongkir besar bikin net < modal -> rugi NYATA -414.038 (sesuai settlement).",
+      "input": { "product_revenue": 1747939, "admin_fee": 611577, "cogs": 1550400 },
+      "expected_profit": -414038,
+      "expected_net": 1136362
+    },
+    {
+      "id": "income_only_no_hpp_overstated",
+      "label": "Income-only, belum ada file Pesanan (HPP 0)",
+      "why": "Belum ada SKU -> cogs=0 -> laba = net (OVERSTATE, belum final). Didokumentasikan sebagai perilaku diketahui.",
+      "input": { "product_revenue": 148602, "admin_fee": 0, "cogs": 0 },
+      "expected_profit": 148602
+    }
+  ]
+}
