@@ -105,29 +105,77 @@ class OrderImporter
         $oldCost = DB::table('products')->where('organization_id', $this->orgId)->pluck('cost_price', 'sku')->all();
 
         $ins = 0; $upd = 0; $changes = []; $now = now();
-        $prodRows = []; $pmiRows = [];
+        $prodRows = []; $pmiRows = []; $priceRows = [];
         foreach ($products as $p) {
             if (($p['sku'] ?? '') === '') continue;
             $new = (float) $p['cost'];
+            $changedAt = mp_jakmall_date($p['changedAt'] ?? null); // tgl "Perubahan Terakhir" dari master
             if (isset($oldCost[$p['sku']])) {
-                if (abs((float) $oldCost[$p['sku']] - $new) > 1) $changes[] = ['sku' => $p['sku'], 'name' => (string) $p['name'], 'old' => (float) $oldCost[$p['sku']], 'new' => $new];
+                if (abs((float) $oldCost[$p['sku']] - $new) > 1) {
+                    $changes[] = ['sku' => $p['sku'], 'name' => (string) $p['name'], 'old' => (float) $oldCost[$p['sku']], 'new' => $new];
+                    $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $p['sku'], 'old_price' => (float) $oldCost[$p['sku']],
+                        'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
+                }
                 $upd++;
             } else {
                 $ins++;
+                // Harga awal produk baru = titik riwayat pertama.
+                $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $p['sku'], 'old_price' => null,
+                    'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
             }
             $prodRows[] = ['organization_id' => $this->orgId, 'sku' => $p['sku'], 'name' => mb_substr((string) $p['name'], 0, 255),
-                'cost_price' => $new, 'dropship_cost' => $new, 'supplier_id' => $supId, 'active' => 1, 'created_at' => $now, 'updated_at' => $now];
+                'cost_price' => $new, 'dropship_cost' => $new, 'cost_changed_at' => $changedAt, 'supplier_id' => $supId, 'active' => 1, 'created_at' => $now, 'updated_at' => $now];
             foreach ($p['mpIds'] ?? [] as $mpId) {
                 $pmiRows[] = ['organization_id' => $this->orgId, 'marketplace_product_id' => mb_substr((string) $mpId, 0, 64), 'sku' => $p['sku'], 'created_at' => $now, 'updated_at' => $now];
             }
         }
         foreach (array_chunk($prodRows, 500) as $c) {
-            DB::table('products')->upsert($c, ['organization_id', 'sku'], ['name', 'cost_price', 'dropship_cost', 'supplier_id', 'active', 'updated_at']);
+            DB::table('products')->upsert($c, ['organization_id', 'sku'], ['name', 'cost_price', 'dropship_cost', 'cost_changed_at', 'supplier_id', 'active', 'updated_at']);
         }
         foreach (array_chunk($pmiRows, 500) as $c) {
             DB::table('product_marketplace_ids')->upsert($c, ['organization_id', 'marketplace_product_id'], ['sku', 'updated_at']);
         }
+        foreach (array_chunk($priceRows, 500) as $c) {
+            DB::table('product_price_changes')->insert($c);
+        }
         return [$ins, $upd, $changes];
+    }
+
+    /**
+     * Seed riwayat harga dari membandingkan 2 snapshot master (lama vs baru).
+     * Mencatat satu perubahan per SKU yang harganya beda, dgn tanggal "Perubahan
+     * Terakhir" master baru. Idempotent (lewati yg sudah tercatat sku+new_price).
+     */
+    public function seedPriceHistory(array $oldProducts, array $newProducts): int
+    {
+        $oldMap = [];
+        foreach ($oldProducts as $p) {
+            if (! empty($p['sku'])) $oldMap[$p['sku']] = (float) $p['cost'];
+        }
+        $existing = DB::table('product_price_changes')->where('organization_id', $this->orgId)
+            ->get(['sku', 'new_price'])->map(fn ($r) => $r->sku . '|' . (float) $r->new_price)->flip();
+
+        $now = now(); $rows = []; $setChangedAt = [];
+        foreach ($newProducts as $p) {
+            $sku = $p['sku'] ?? ''; if ($sku === '') continue;
+            $new = (float) $p['cost'];
+            $old = $oldMap[$sku] ?? null;
+            if ($old === null || abs($old - $new) <= 1) continue;
+            $changedAt = mp_jakmall_date($p['changedAt'] ?? null);
+            $setChangedAt[$sku] = $changedAt;
+            if (isset($existing[$sku . '|' . $new])) continue; // sudah tercatat
+            $rows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'old_price' => $old,
+                'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
+        }
+        foreach (array_chunk($rows, 500) as $c) {
+            DB::table('product_price_changes')->insert($c);
+        }
+        foreach (array_chunk($setChangedAt, 500, true) as $chunk) {
+            foreach ($chunk as $sku => $dt) {
+                if ($dt) DB::table('products')->where('organization_id', $this->orgId)->where('sku', $sku)->update(['cost_changed_at' => $dt]);
+            }
+        }
+        return count($rows);
     }
 
     /** Isi HPP yang masih kosong (jangan timpa HPP lama — histori harga). */

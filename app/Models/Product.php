@@ -42,6 +42,7 @@ class Product extends Model
         return [
             'cost_price' => 'decimal:2',
             'dropship_cost' => 'decimal:2',
+            'cost_changed_at' => 'datetime',
             'active' => 'boolean',
         ];
     }

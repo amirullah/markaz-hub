@@ -281,13 +281,31 @@ function mp_jakmall_products(array $assoc): array
             if (strpos($k, 'productid') === 0 && $v !== '' && $v !== '-') $mpIds[] = $v;
         }
         $out[] = [
-            'sku'   => $sku,
-            'name'  => mp_pick($r, ['nama produk', 'product name']) ?: $sku,
-            'cost'  => mp_num(mp_pick($r, ['harga', 'price', 'cost'])),
-            'mpIds' => $mpIds,
+            'sku'       => $sku,
+            'name'      => mp_pick($r, ['nama produk', 'product name']) ?: $sku,
+            'cost'      => mp_num(mp_pick($r, ['harga', 'price', 'cost'])),
+            'changedAt' => mp_pick($r, ['perubahan terakhir', 'last update', 'updated']),
+            'mpIds'     => $mpIds,
         ];
     }
     return $out;
+}
+
+/**
+ * Parse tanggal master Jakmall "21 Jun 26, 00:56" (singkatan bulan Indonesia/Inggris)
+ * jadi 'Y-m-d H:i:s'. Kembalikan null bila tak terbaca.
+ */
+function mp_jakmall_date(?string $s): ?string
+{
+    $s = trim((string) $s);
+    if ($s === '') return null;
+    if (!preg_match('/(\d{1,2})\s+([A-Za-z]{3,4})\s+(\d{2,4}),?\s+(\d{1,2}):(\d{2})/', $s, $m)) return null;
+    $months = ['jan'=>1,'feb'=>2,'mar'=>3,'apr'=>4,'mei'=>5,'may'=>5,'jun'=>6,'jul'=>7,
+        'agu'=>8,'ags'=>8,'agt'=>8,'aug'=>8,'sep'=>9,'okt'=>10,'oct'=>10,'nov'=>11,'des'=>12,'dec'=>12];
+    $mon = $months[strtolower(substr($m[2], 0, 3))] ?? null;
+    if (!$mon) return null;
+    $yr = (int) $m[3]; if ($yr < 100) $yr += 2000;
+    return sprintf('%04d-%02d-%02d %02d:%02d:00', $yr, $mon, (int) $m[1], (int) $m[4], (int) $m[5]);
 }
 
 // ---------- Adapter: Laporan Pesanan Jakmall (deteksi dropship + biaya) ----------
