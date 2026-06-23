@@ -306,20 +306,70 @@ function mp_catalog_products(array $assoc): array
 }
 
 /**
- * Parse tanggal master Dropship "21 Jun 26, 00:56" (singkatan bulan Indonesia/Inggris)
- * jadi 'Y-m-d H:i:s'. Kembalikan null bila tak terbaca.
+ * Parse tanggal fleksibel → 'Y-m-d H:i:s' (atau null). Mendukung:
+ *  - "21 Jun 26, 00:56" (singkatan bulan ID/EN)
+ *  - ISO "2026-06-21" / "2026-06-21 09:30"
+ *  - "21/06/2026" / "21-06-2026" (DD/MM/YYYY, gaya Indonesia)
  */
 function mp_flex_date(?string $s): ?string
 {
     $s = trim((string) $s);
     if ($s === '') return null;
-    if (!preg_match('/(\d{1,2})\s+([A-Za-z]{3,4})\s+(\d{2,4}),?\s+(\d{1,2}):(\d{2})/', $s, $m)) return null;
-    $months = ['jan'=>1,'feb'=>2,'mar'=>3,'apr'=>4,'mei'=>5,'may'=>5,'jun'=>6,'jul'=>7,
-        'agu'=>8,'ags'=>8,'agt'=>8,'aug'=>8,'sep'=>9,'okt'=>10,'oct'=>10,'nov'=>11,'des'=>12,'dec'=>12];
-    $mon = $months[strtolower(substr($m[2], 0, 3))] ?? null;
-    if (!$mon) return null;
-    $yr = (int) $m[3]; if ($yr < 100) $yr += 2000;
-    return sprintf('%04d-%02d-%02d %02d:%02d:00', $yr, $mon, (int) $m[1], (int) $m[4], (int) $m[5]);
+
+    // Singkatan bulan: "21 Jun 26, 00:56"
+    if (preg_match('/(\d{1,2})\s+([A-Za-z]{3,4})\s+(\d{2,4}),?\s+(\d{1,2}):(\d{2})/', $s, $m)) {
+        $months = ['jan'=>1,'feb'=>2,'mar'=>3,'apr'=>4,'mei'=>5,'may'=>5,'jun'=>6,'jul'=>7,
+            'agu'=>8,'ags'=>8,'agt'=>8,'aug'=>8,'sep'=>9,'okt'=>10,'oct'=>10,'nov'=>11,'des'=>12,'dec'=>12];
+        $mon = $months[strtolower(substr($m[2], 0, 3))] ?? null;
+        if ($mon) {
+            $yr = (int) $m[3]; if ($yr < 100) $yr += 2000;
+            return sprintf('%04d-%02d-%02d %02d:%02d:00', $yr, $mon, (int) $m[1], (int) $m[4], (int) $m[5]);
+        }
+    }
+    // ISO: 2026-06-21 [09:30[:00]]
+    if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/', $s, $m)) {
+        return sprintf('%04d-%02d-%02d %02d:%02d:00', (int) $m[1], (int) $m[2], (int) $m[3], (int) ($m[4] ?? 0), (int) ($m[5] ?? 0));
+    }
+    // DD/MM/YYYY atau DD-MM-YYYY [HH:MM] (gaya Indonesia)
+    if (preg_match('#^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?#', $s, $m)) {
+        $yr = (int) $m[3]; if ($yr < 100) $yr += 2000;
+        return sprintf('%04d-%02d-%02d %02d:%02d:00', $yr, (int) $m[2], (int) $m[1], (int) ($m[4] ?? 0), (int) ($m[5] ?? 0));
+    }
+    return null;
+}
+
+/**
+ * Parser KATALOG GENERIK (sumber apa pun) — CSV atau XLSX. Toleran nama kolom:
+ * SKU, Nama, HPP/Harga/Modal/Cost, (opsional) Modal Dropship, (opsional) Tanggal.
+ */
+function mp_generic_catalog(string $path, string $name): array
+{
+    $ext = strtolower(pathinfo($name !== '' ? $name : $path, PATHINFO_EXTENSION));
+    if ($ext === 'csv' || $ext === 'txt') {
+        $assoc = mp_read_csv($path);
+    } else {
+        $assoc = [];
+        foreach (xlsx_read($path) as $rows) {
+            $hi = mp_header_index($rows, ['sku'], 8);
+            if ($hi < 0) $hi = mp_header_index($rows, ['kode sku'], 8);
+            if ($hi < 0) $hi = mp_header_index($rows, ['kode produk'], 8);
+            if ($hi >= 0) { $assoc = mp_assoc_rows($rows, $hi); break; }
+        }
+    }
+    $out = [];
+    foreach ($assoc as $r) {
+        $sku = mp_pick($r, ['kode sku', 'sku', 'kode produk', 'kode']);
+        if (!$sku) continue;
+        $out[] = [
+            'sku'          => $sku,
+            'name'         => mp_pick($r, ['nama produk', 'nama', 'product name', 'name']) ?: $sku,
+            'cost'         => mp_num(mp_pick($r, ['hpp', 'harga modal', 'modal', 'harga', 'cost price', 'cost', 'price'])),
+            'dropshipCost' => mp_num(mp_pick($r, ['modal dropship', 'biaya dropship', 'harga dropship', 'dropship cost'])),
+            'changedAt'    => mp_pick($r, ['tanggal', 'tgl', 'perubahan terakhir', 'last update', 'updated', 'date']),
+            'mpIds'        => [],
+        ];
+    }
+    return $out;
 }
 
 // ---------- Adapter: Laporan Pesanan Dropship (deteksi dropship + biaya) ----------

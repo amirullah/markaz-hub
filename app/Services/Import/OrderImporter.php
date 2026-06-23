@@ -94,15 +94,22 @@ class OrderImporter
         return ['report' => $report, 'summary' => $summary];
     }
 
-    /** Upsert katalog Dropship (produk + ID marketplace) + deteksi perubahan harga. */
-    public function importCatalog(array $products): array
+    /**
+     * Upsert katalog produk + deteksi perubahan harga. Sumber apa pun.
+     * @param int|null $supplierId Supplier untuk produk (null = pakai/buat supplier dropship default).
+     * @param bool $asDropship true: modal = harga di file (dropship); false: stok sendiri → dropship_cost dari kolom "Modal Dropship" (default 0).
+     */
+    public function importCatalog(array $products, ?int $supplierId = null, bool $asDropship = true): array
     {
-        $supId = DB::table('suppliers')->where('organization_id', $this->orgId)->where('type', 'DROPSHIP')->value('id');
+        $supId = $supplierId;
         if (! $supId) {
-            $supId = DB::table('suppliers')->insertGetId([
-                'organization_id' => $this->orgId, 'name' => 'Dropship', 'type' => 'DROPSHIP',
-                'note' => 'Dropship', 'created_at' => now(), 'updated_at' => now(),
-            ]);
+            $supId = DB::table('suppliers')->where('organization_id', $this->orgId)->where('type', 'DROPSHIP')->value('id');
+            if (! $supId) {
+                $supId = DB::table('suppliers')->insertGetId([
+                    'organization_id' => $this->orgId, 'name' => 'Dropship', 'type' => 'DROPSHIP',
+                    'note' => 'Dropship', 'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
         }
         $oldCost = DB::table('products')->where('organization_id', $this->orgId)->pluck('cost_price', 'sku')->all();
         $oldDate = DB::table('products')->where('organization_id', $this->orgId)->pluck('cost_changed_at', 'sku')->all();
@@ -136,8 +143,9 @@ class OrderImporter
                 $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'old_price' => null,
                     'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
             }
+            $dropCost = $asDropship ? $new : (float) ($p['dropshipCost'] ?? 0);
             $prodRows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'name' => mb_substr((string) $p['name'], 0, 255),
-                'cost_price' => $new, 'dropship_cost' => $new, 'cost_changed_at' => $changedAt, 'supplier_id' => $supId, 'active' => 1, 'created_at' => $now, 'updated_at' => $now];
+                'cost_price' => $new, 'dropship_cost' => $dropCost, 'cost_changed_at' => $changedAt, 'supplier_id' => $supId, 'active' => 1, 'created_at' => $now, 'updated_at' => $now];
             foreach ($p['mpIds'] ?? [] as $mpId) {
                 $pmiRows[] = ['organization_id' => $this->orgId, 'marketplace_product_id' => mb_substr((string) $mpId, 0, 64), 'sku' => $sku, 'created_at' => $now, 'updated_at' => $now];
             }
@@ -152,6 +160,29 @@ class OrderImporter
             DB::table('product_price_changes')->insert($c);
         }
         return [$ins, $upd, $changes, $skippedOld];
+    }
+
+    /**
+     * Impor file KATALOG GENERIK (CSV/XLSX) dari sumber apa pun + supplier pilihan.
+     * Cari-atau-buat supplier berdasarkan nama (org-scoped). Mengembalikan ringkasan.
+     */
+    public function importCatalogFile(string $path, string $name, string $supplierName, bool $isDropship): array
+    {
+        $products = mp_generic_catalog($path, $name);
+        if (! $products) {
+            return ['ok' => false, 'reason' => 'Tidak ada produk terbaca. Pastikan file punya kolom SKU dan HPP/Harga.'];
+        }
+        $supName = trim($supplierName) !== '' ? trim($supplierName) : ($isDropship ? 'Dropship' : 'Stok Sendiri');
+        $supId = DB::table('suppliers')->where('organization_id', $this->orgId)->where('name', $supName)->value('id');
+        if (! $supId) {
+            $supId = DB::table('suppliers')->insertGetId([
+                'organization_id' => $this->orgId, 'name' => mb_substr($supName, 0, 255),
+                'type' => $isDropship ? 'DROPSHIP' : 'SELF', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+        [$ins, $upd, $changes, $skippedOld] = $this->importCatalog($products, (int) $supId, $isDropship);
+        return ['ok' => true, 'read' => count($products), 'ins' => $ins, 'upd' => $upd,
+            'changes' => count($changes), 'skipped' => $skippedOld, 'supplier' => $supName];
     }
 
     /**
