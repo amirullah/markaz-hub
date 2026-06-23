@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Organization extends Model
 {
-    protected $fillable = ['name', 'slug', 'active', 'uses_dropship'];
+    protected $fillable = ['name', 'slug', 'active', 'uses_dropship',
+        'fee_shopee_service_pct', 'fee_shopee_service_cap', 'fee_tokotiktok_dynamic_pct'];
 
     protected static function booted(): void
     {
@@ -24,7 +25,13 @@ class Organization extends Model
 
     protected function casts(): array
     {
-        return ['active' => 'boolean', 'uses_dropship' => 'boolean'];
+        return [
+            'active' => 'boolean',
+            'uses_dropship' => 'boolean',
+            'fee_shopee_service_pct' => 'decimal:2',
+            'fee_shopee_service_cap' => 'integer',
+            'fee_tokotiktok_dynamic_pct' => 'decimal:2',
+        ];
     }
 
     /**

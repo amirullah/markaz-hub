@@ -30,6 +30,8 @@ class RiwayatPerubahan extends Page
                 'Tokopedia & TikTok benar-benar jadi satu channel di input toko, pesanan, tabel, filter, dan grafik (sesuai satu seller center).',
                 'Halaman Pesanan: kartu total (Jumlah Pesanan, Omzet, Laba) di atas tabel yang mengikuti filter; filter ringkas (collapsible) & berlaku seketika; detail produk tampil di tiap pesanan; total mengikuti periode yang dipilih.',
                 'Estimasi biaya admin per kategori produk (termasuk biaya proses Rp1.250); 26 kategori resmi untuk semua akun; sistem memilih kategori produk otomatis.',
+                'Estimasi biaya lebih akurat: kini mengikuti struktur biaya nyata marketplace — Shopee (Biaya Administrasi + Biaya Layanan + Proses) & Tokopedia/TikTok (Komisi + Komisi Dinamis + Proses). Biaya Layanan/Komisi Dinamis bisa diatur di Pengaturan.',
+                'Halaman Impor dirapikan untuk awam: 3 menu jelas (Laporan Marketplace / Daftar Produk / Dropship), contoh nama file, tombol Unduh Format File (Excel), dan notifikasi yang lebih jelas.',
                 'Fitur Kosongkan Data (reset) dengan konfirmasi & aman per akun; tampilan dirapikan agar lebih menarik dan hemat tempat.',
             ],
         ],
