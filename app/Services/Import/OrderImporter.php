@@ -31,7 +31,7 @@ class OrderImporter
         $srcLabel = [
             'shopee_income' => 'Laporan Penghasilan Shopee', 'shopee_order' => 'Order Completed Shopee',
             'tiktok_income' => 'Laporan Penghasilan Tokopedia/TikTok', 'csv' => 'Pesanan Selesai Tokopedia/TikTok',
-            'jakmall' => 'Master Produk Jakmall', 'jakmall_orders' => 'Laporan Pesanan Jakmall', 'generic_xlsx' => 'File pesanan',
+            'jakmall' => 'Master Produk / Katalog', 'jakmall_orders' => 'Laporan Dropship', 'generic_xlsx' => 'File pesanan',
         ];
         $report = []; $orderSources = []; $orderFiles = []; $jakmall = []; $dropshipMap = []; $hasJakmallReport = false;
 
@@ -41,7 +41,7 @@ class OrderImporter
             // Org non-Jakmall: lewati hanya LAPORAN PESANAN (dropship). Master produk
             // tetap diproses karena = katalog harga/HPP + riwayat harga (relevan walau dropship off).
             if (! $this->usesDropship && ($res['type'] ?? '') === 'jakmall_orders') {
-                $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Laporan Pesanan Jakmall (dropship) dilewati — organisasi tidak memakai dropship Jakmall. (Master produk tetap diproses.)'];
+                $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Laporan dropship dilewati — organisasi tidak berjualan dropship (atur di menu Pengaturan). Master produk/katalog tetap diproses.'];
                 continue;
             }
             if ($res['type'] === 'jakmall') {
@@ -88,7 +88,7 @@ class OrderImporter
         }
         if ($hasJakmallReport) {
             $bf = $this->backfillDropship($dropshipMap);
-            $summary['dropship'] = "Laporan Jakmall: " . count($dropshipMap) . " pesanan dropship; $bf pesanan lama diperbarui.";
+            $summary['dropship'] = "Laporan dropship: " . count($dropshipMap) . " pesanan dropship; $bf pesanan lama diperbarui.";
         }
 
         return ['report' => $report, 'summary' => $summary];
@@ -216,7 +216,7 @@ class OrderImporter
         $n = 0;
         foreach ($dropshipMap as $no => $jak) {
             $modal = (float) ($jak['productCost'] ?? 0); // Total Harga Produk = modal historis (biaya bila packing sendiri)
-            $note = mb_substr('Dropship Jakmall' . (!empty($jak['jakmallCode']) ? ' #' . $jak['jakmallCode'] : '') .
+            $note = mb_substr('Dropship' . (!empty($jak['jakmallCode']) ? ' #' . $jak['jakmallCode'] : '') .
                 ': total Rp' . number_format($jak['total'], 0, ',', '.') . ', modal Rp' . number_format($modal, 0, ',', '.'), 0, 500);
             $n += DB::update("UPDATE orders SET fulfillment='DROPSHIP', dropship_cost=?, dropship_modal=?, cogs=0, note=?
                 WHERE organization_id=? AND external_no=? AND status NOT IN ('CANCELLED','RETURNED') AND deleted_at IS NULL
@@ -301,7 +301,7 @@ class OrderImporter
                 if ($jak) {
                     $dropship = (float) $jak['total'];
                     $dropshipModal = (float) ($jak['productCost'] ?? 0); // modal historis = biaya bila packing sendiri
-                    $note = mb_substr('Dropship Jakmall' . (!empty($jak['jakmallCode']) ? ' #' . $jak['jakmallCode'] : '') . ': total Rp' . number_format($jak['total'], 0, ',', '.') . ', modal Rp' . number_format($dropshipModal, 0, ',', '.'), 0, 500);
+                    $note = mb_substr('Dropship' . (!empty($jak['jakmallCode']) ? ' #' . $jak['jakmallCode'] : '') . ': total Rp' . number_format($jak['total'], 0, ',', '.') . ', modal Rp' . number_format($dropshipModal, 0, ',', '.'), 0, 500);
                 } elseif ($ex && $ex['fulfillment'] === 'DROPSHIP') {
                     $dropship = (float) $ex['dropship_cost']; $dropshipModal = (float) ($ex['dropship_modal'] ?? 0); $note = $ex['note'];
                 } else {

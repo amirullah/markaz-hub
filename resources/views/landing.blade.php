@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MarkazHub — Kelola Laba Marketplace dengan Mudah</title>
-    <meta name="description" content="MarkazHub membantu seller Shopee, Tokopedia/TikTok, dan dropship (Jakmall & sumber lain) menghitung laba akurat, menemukan produk merugi, dan mengelola pesanan dalam satu aplikasi.">
+    <meta name="description" content="MarkazHub membantu seller Shopee, Tokopedia/TikTok, dan dropship menghitung laba akurat, menemukan produk merugi, dan mengelola pesanan dalam satu aplikasi.">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;background:#fff;line-height:1.6}
@@ -68,7 +68,7 @@
 
     <header class="hero">
         <div class="wrap">
-            <span class="pill">📊 Untuk seller Shopee · Tokopedia/TikTok · Dropship (Jakmall & lainnya)</span>
+            <span class="pill">📊 Untuk seller Shopee · Tokopedia/TikTok · Dropship</span>
             <h1>Tahu laba aslimu, di setiap pesanan.</h1>
             <p>MarkazHub menggabungkan laporan marketplace-mu, menghitung laba bersih yang akurat, dan menunjukkan produk mana yang sebenarnya merugi — semua dalam satu aplikasi.</p>
             <div class="cta">

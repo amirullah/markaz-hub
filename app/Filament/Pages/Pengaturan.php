@@ -41,7 +41,7 @@ class Pengaturan extends Page
                 ->schema([
                     Toggle::make('uses_dropship')
                         ->label('Saya berjualan dropship')
-                        ->helperText('Aktif jika sebagian/semua pesanan Anda dropship (dari sumber mana pun — Jakmall, supplier/perusahaan lain, atau manual dari seller lain). Aktif: kolom & biaya dropship + pemenuhan tampil. Nonaktif: tampilan dropship disembunyikan dan laba dihitung sebagai packing sendiri.'),
+                        ->helperText('Aktif jika sebagian/semua pesanan Anda dropship (dari sumber mana pun — supplier/perusahaan lain, atau manual dari seller lain). Aktif: kolom & biaya dropship + pemenuhan tampil. Nonaktif: tampilan dropship disembunyikan dan laba dihitung sebagai packing sendiri.'),
                 ])
                 ->action(function (array $data): void {
                     $org = Organization::find(auth()->user()->organization_id);

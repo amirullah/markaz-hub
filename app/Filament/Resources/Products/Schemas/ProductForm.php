@@ -39,7 +39,7 @@ class ProductForm
                     ->prefix('Rp'),
                 TextInput::make('dropship_cost')
                     ->label('Modal Dropship')
-                    ->helperText('Harga modal per unit jika dropship (mis. Jakmall).')
+                    ->helperText('Harga modal per unit jika dropship (dari supplier).')
                     ->required()
                     ->numeric()
                     ->minValue(0)

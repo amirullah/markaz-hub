@@ -4,7 +4,7 @@
 
 ### Tahu laba aslimu, di setiap pesanan.
 
-**Aplikasi manajemen penjualan & laba untuk seller marketplace Indonesia — Shopee, Tokopedia/TikTok, dan dropship (Jakmall & sumber lain) — dalam satu tempat.**
+**Aplikasi manajemen penjualan & laba untuk seller marketplace Indonesia — Shopee, Tokopedia/TikTok, dan dropship — dalam satu tempat.**
 
 [🚀 Coba Aplikasinya](https://markazhub.mkz.my.id) · [✨ Fitur](#-fitur) · [🧰 Teknologi](#-teknologi)
 

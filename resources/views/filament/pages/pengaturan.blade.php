@@ -14,7 +14,7 @@
             <div>
                 <div style="font-weight:600;color:#1e293b">Berjualan Dropship</div>
                 <div style="font-size:.82rem;color:#64748b;margin-top:.25rem;max-width:46ch">
-                    Aktifkan bila sebagian/semua pesanan Anda dropship — dari sumber mana pun (Jakmall, supplier/perusahaan lain, atau manual dari seller lain). Aktif: kolom & biaya dropship + pemenuhan tampil pada produk & pesanan. Nonaktif: tampilan dropship disembunyikan & laba dihitung sebagai packing sendiri.
+                    Aktifkan bila sebagian/semua pesanan Anda dropship — dari sumber mana pun (supplier/perusahaan lain, atau manual dari seller lain). Aktif: kolom & biaya dropship + pemenuhan tampil pada produk & pesanan. Nonaktif: tampilan dropship disembunyikan & laba dihitung sebagai packing sendiri.
                 </div>
             </div>
             <div style="flex-shrink:0">

@@ -26,12 +26,12 @@
                 </div>
                 <div style="{{ $mini }}">
                     <div style="font-weight:600;color:#1e293b">🗂️ Master Produk / Katalog</div>
-                    <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Katalog produk, <strong>harga/HPP</strong> &amp; riwayat harga (mis. master Jakmall).</div>
+                    <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Katalog produk, <strong>harga/HPP</strong> &amp; riwayat harga.</div>
                 </div>
                 @if (\App\Models\Organization::currentUsesDropship())
                     <div style="{{ $mini }}">
                         <div style="font-weight:600;color:#1e293b">📑 Laporan Dropship</div>
-                        <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Biaya dropship per pesanan dari supplier (mis. Laporan Pesanan Jakmall).</div>
+                        <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Biaya dropship per pesanan dari supplier.</div>
                     </div>
                 @endif
             </div>
