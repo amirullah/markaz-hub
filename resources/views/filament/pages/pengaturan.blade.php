@@ -10,7 +10,7 @@
         $calibrated = ((float) ($org?->fee_shopee_service_pct ?? 10) == 0.0 && (float) ($org?->fee_tokotiktok_dynamic_pct ?? 6.5) == 0.0);
     @endphp
 
-    <div style="display:flex;flex-direction:column;gap:1rem;max-width:1040px;margin-inline:auto">
+    <div style="display:flex;flex-direction:column;gap:1rem;max-width:1040px">
         <p style="margin:0;color:#475569;font-size:.9rem">Atur fitur &amp; biaya sesuai cara Anda berjualan. Tiap kotak punya tombolnya sendiri.</p>
 
         {{-- ===== Identitas ===== --}}

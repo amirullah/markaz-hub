@@ -9,7 +9,7 @@
         $storeUrl = \App\Filament\Resources\Stores\StoreResource::getUrl('create');
     @endphp
 
-    <div style="display:flex;flex-direction:column;gap:1rem;max-width:1040px;margin-inline:auto">
+    <div style="display:flex;flex-direction:column;gap:1rem;max-width:1040px">
         <p style="margin:0;color:#475569;font-size:.9rem">Pilih jenis impor sesuai file Anda. Tiap kotak punya tombolnya sendiri — tinggal klik di kotak yang sesuai.</p>
 
         @unless ($hasStores)
