@@ -155,26 +155,22 @@ class OrderImporter
         $existing = DB::table('product_price_changes')->where('organization_id', $this->orgId)
             ->get(['sku', 'new_price'])->map(fn ($r) => $r->sku . '|' . (float) $r->new_price)->flip();
 
-        $now = now(); $rows = []; $setChangedAt = [];
+        $now = now(); $rows = [];
         foreach ($newProducts as $p) {
             $sku = $p['sku'] ?? ''; if ($sku === '') continue;
             $new = (float) $p['cost'];
             $old = $oldMap[$sku] ?? null;
             if ($old === null || abs($old - $new) <= 1) continue;
-            $changedAt = mp_jakmall_date($p['changedAt'] ?? null);
-            $setChangedAt[$sku] = $changedAt;
             if (isset($existing[$sku . '|' . $new])) continue; // sudah tercatat
             $rows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'old_price' => $old,
-                'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
+                'new_price' => $new, 'changed_at' => mp_jakmall_date($p['changedAt'] ?? null) ?? $now,
+                'created_at' => $now, 'updated_at' => $now];
         }
         foreach (array_chunk($rows, 500) as $c) {
             DB::table('product_price_changes')->insert($c);
         }
-        foreach (array_chunk($setChangedAt, 500, true) as $chunk) {
-            foreach ($chunk as $sku => $dt) {
-                if ($dt) DB::table('products')->where('organization_id', $this->orgId)->where('sku', $sku)->update(['cost_changed_at' => $dt]);
-            }
-        }
+        // Set cost_changed_at = changed_at terbaru per SKU dalam SATU query (hemat di MySQL remote).
+        DB::statement('UPDATE products p JOIN (SELECT sku, MAX(changed_at) mx FROM product_price_changes WHERE organization_id = ? GROUP BY sku) x ON x.sku = p.sku SET p.cost_changed_at = x.mx WHERE p.organization_id = ?', [$this->orgId, $this->orgId]);
         return count($rows);
     }
 

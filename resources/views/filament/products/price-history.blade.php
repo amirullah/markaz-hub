@@ -31,9 +31,16 @@
             </div>
         </div>
     @empty
-        <div style="text-align:center;color:#94a3b8;padding:1.5rem">
-            Belum ada riwayat perubahan harga untuk produk ini.<br>
-            <span style="font-size:.8rem">Riwayat akan terisi otomatis setiap kali Anda meng-upload file master produk Jakmall yang baru.</span>
+        <div style="text-align:center;color:#64748b;padding:1.25rem">
+            @if ($record->cost_changed_at)
+                Harga terakhir berubah pada
+                <strong>{{ \Illuminate\Support\Carbon::parse($record->cost_changed_at)->format('d M Y') }}</strong>
+                (menurut data master), tetapi perubahan itu terjadi <em>sebelum</em> sistem mulai mencatat detailnya.<br>
+                <span style="font-size:.8rem;color:#94a3b8">Perubahan harga berikutnya akan tampil lengkap di sini (harga lama → baru).</span>
+            @else
+                Belum ada perubahan harga tercatat untuk produk ini.<br>
+                <span style="font-size:.8rem;color:#94a3b8">Riwayat terisi otomatis setiap upload master produk Jakmall yang baru.</span>
+            @endif
         </div>
     @endforelse
 </div>
