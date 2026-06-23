@@ -29,9 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            // SPA: pindah menu via AJAX (tanpa reload halaman penuh / unduh ulang aset) —
-            // klik menu terasa instan, bukan loading beberapa detik tiap klik.
-            ->spa()
+            // SPA + prefetch: pindah menu via AJAX (tanpa reload penuh / unduh ulang aset);
+            // hasPrefetching → halaman di-preload saat kursor mendekati menu, jadi saat
+            // diklik terasa instan. Klik menu tak lagi loading beberapa detik.
+            ->spa(hasPrefetching: true)
             ->login()
             ->brandName('MarkazHub')
             ->font('Inter')
