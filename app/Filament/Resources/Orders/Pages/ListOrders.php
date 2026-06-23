@@ -28,7 +28,7 @@ class ListOrders extends ListRecords
         $omzet = (float) (clone $query)->sum('product_revenue');
         $laba = (float) (clone $query)->sum(DB::raw(ProfitService::sqlProfit()));
         $batal = (clone $query)->where('status', 'CANCELLED')->count();
-        $belumFinal = (clone $query)->where('income_verified', false)->where('status', '!=', 'CANCELLED')->count();
+        $belumFinal = (clone $query)->labaBelumFinal()->count();
         $rp = fn ($v): string => 'Rp ' . number_format((float) $v, 0, ',', '.');
         $n = fn ($v): string => number_format((int) $v, 0, ',', '.');
 

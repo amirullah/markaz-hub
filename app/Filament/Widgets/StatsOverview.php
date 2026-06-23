@@ -23,7 +23,7 @@ class StatsOverview extends StatsOverviewWidget
         $margin = $omzet > 0 ? ($laba / $omzet * 100) : 0;
         $batal = Order::query()->where('status', 'CANCELLED')->count();
         $retur = Order::query()->where('status', 'RETURNED')->count();
-        $belumFinal = Order::query()->where('income_verified', false)->where('status', '!=', 'CANCELLED')->count();
+        $belumFinal = Order::query()->labaBelumFinal()->count();
         $pesananRugi = Order::query()->where('status', 'COMPLETED')->whereRaw(ProfitService::sqlProfit() . ' < 0')->count();
 
         // Sparkline 6 bulan terakhir
@@ -61,7 +61,7 @@ class StatsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('warning'),
             Stat::make('Laba Belum Final', number_format($belumFinal, 0, ',', '.'))
-                ->description($belumFinal > 0 ? 'masih estimasi — impor Laporan Penghasilan' : 'semua laba sudah final')
+                ->description($belumFinal > 0 ? 'biaya estimasi / HPP-modal belum ada — laba belum pasti' : 'semua laba sudah final')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($belumFinal > 0 ? 'warning' : 'success'),
         ];

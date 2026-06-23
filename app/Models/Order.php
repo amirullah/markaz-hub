@@ -66,8 +66,8 @@ class Order extends Model
      */
     public function incompleteness(): array
     {
-        if ($this->status === 'CANCELLED') {
-            return [];
+        if (in_array($this->status, ['CANCELLED', 'RETURNED'], true)) {
+            return []; // terminal: cogs/biaya 0 memang disengaja, bukan "kurang"
         }
         $gaps = [];
 
@@ -89,7 +89,22 @@ class Order extends Model
     /** Rincian item produk belum tercatat (catatan, BUKAN penentu laba). */
     public function lacksItemDetail(): bool
     {
-        return $this->status !== 'CANCELLED' && $this->items->count() === 0;
+        return ! in_array($this->status, ['CANCELLED', 'RETURNED'], true) && $this->items->count() === 0;
+    }
+
+    /**
+     * Pesanan yang LABANYA BELUM FINAL/akurat (SQL — cermin incompleteness()):
+     * biaya masih estimasi, ATAU modal/HPP belum ada, ATAU biaya dropship belum ada.
+     * Batal & retur dikecualikan (terminal). Dipakai metrik "Laba Belum Final".
+     */
+    public function scopeLabaBelumFinal($query)
+    {
+        return $query->whereNotIn('status', ['CANCELLED', 'RETURNED'])
+            ->where(function ($q) {
+                $q->where('income_verified', false)
+                    ->orWhere(fn ($q) => $q->where('fulfillment', 'SELF')->where('product_revenue', '>', 0)->where('cogs', '<=', 0))
+                    ->orWhere(fn ($q) => $q->where('fulfillment', 'DROPSHIP')->where('dropship_cost', '<=', 0));
+            });
     }
 
     /** Laba bersih (pakai sumber kebenaran tunggal ProfitService). */
