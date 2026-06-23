@@ -1,30 +1,35 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
+    @php
+        $card = 'border:1px solid #e5e7eb;border-radius:.75rem;padding:1rem;background:#fff';
+        $mini = 'border:1px solid #eef2f7;border-radius:.6rem;padding:.75rem;background:#f8fafc';
+    @endphp
+
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
         {{-- ====== SEBELUM IMPORT: panduan ====== --}}
-        <div class="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
-            <p class="font-semibold text-gray-800 mb-2">📥 Cara import (3 langkah)</p>
-            <ol class="list-decimal ms-5 space-y-1">
+        <div style="{{ $card }}">
+            <div style="font-weight:700;color:#1e293b;margin-bottom:.6rem">📥 Cara import (3 langkah)</div>
+            <ol style="margin:0 0 0 1.1rem;padding:0;color:#475569;font-size:.88rem;line-height:1.7">
                 <li>Klik <strong>Unggah &amp; Import</strong> di kanan atas.</li>
                 <li>Pilih <strong>toko tujuan</strong> sesuai channel file (nama toko + channel ditampilkan, mis. "MarkazMall SBY — Shopee").</li>
                 <li>Unggah satu atau beberapa file ekspor sekaligus, lalu klik Import. Sistem mengenali jenis tiap file otomatis.</li>
             </ol>
 
-            <p class="font-semibold text-gray-800 mt-4 mb-2">Jenis file yang didukung</p>
-            <div class="grid gap-2 sm:grid-cols-3">
-                <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                    <div class="font-medium text-gray-800">🧾 Laporan Penghasilan</div>
-                    <div class="text-xs mt-1">Memberi <strong>biaya admin & laba final</strong> yang akurat. Tanpa ini, laba masih estimasi.</div>
+            <div style="font-weight:700;color:#1e293b;margin:1.1rem 0 .5rem">Jenis file yang didukung</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem">
+                <div style="{{ $mini }}">
+                    <div style="font-weight:600;color:#1e293b">🧾 Laporan Penghasilan</div>
+                    <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Memberi <strong>biaya admin &amp; laba final</strong> yang akurat. Tanpa ini, laba masih estimasi.</div>
                 </div>
-                <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                    <div class="font-medium text-gray-800">📦 File Pesanan</div>
-                    <div class="text-xs mt-1">Daftar pesanan, produk, qty, & status (selesai/dikirim/retur/batal).</div>
+                <div style="{{ $mini }}">
+                    <div style="font-weight:600;color:#1e293b">📦 File Pesanan</div>
+                    <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Daftar pesanan, produk, qty, &amp; status (selesai/dikirim/retur/batal).</div>
                 </div>
-                <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                    <div class="font-medium text-gray-800">🗂️ Master / Laporan Jakmall</div>
-                    <div class="text-xs mt-1">Katalog produk & <strong>HPP/modal</strong> (untuk hitung laba).</div>
+                <div style="{{ $mini }}">
+                    <div style="font-weight:600;color:#1e293b">🗂️ Master / Laporan Jakmall</div>
+                    <div style="font-size:.8rem;color:#64748b;margin-top:.25rem">Katalog produk &amp; <strong>HPP/modal</strong> (untuk hitung laba).</div>
                 </div>
             </div>
-            <p class="mt-3 text-xs text-gray-500">💡 File yang channel-nya tidak cocok dengan toko otomatis dilewati (tidak menggagalkan file lain). Aman mengunggah ulang — data yang sama akan diperbarui, bukan dobel.</p>
+            <p style="margin:.8rem 0 0;font-size:.8rem;color:#64748b">💡 File yang channel-nya tidak cocok dengan toko otomatis dilewati (tidak menggagalkan file lain). Aman mengunggah ulang — data yang sama akan diperbarui, bukan dobel.</p>
         </div>
 
         {{-- ====== SESUDAH IMPORT: hasil ====== --}}
@@ -36,33 +41,32 @@
             @endphp
 
             {{-- Ringkasan menonjol --}}
-            <div class="rounded-xl border p-4 {{ $fail ? 'border-amber-200 bg-amber-50' : 'border-green-200 bg-green-50' }}">
-                <p class="font-bold text-base mb-1">
+            <div style="border-radius:.75rem;padding:1rem;border:1px solid {{ $fail ? '#fcd34d' : '#86efac' }};background:{{ $fail ? '#fffbeb' : '#f0fdf4' }}">
+                <div style="font-weight:800;font-size:1rem;margin-bottom:.3rem">
                     {{ $fail ? '⚠️' : '✅' }} Import selesai — {{ $ok }} file berhasil{{ $fail ? ", {$fail} dilewati/gagal" : '' }}
-                </p>
-                @foreach ($ringkas as $line)
-                    <p class="text-sm text-gray-700">• {{ $line }}</p>
-                @endforeach
-                @if (empty($ringkas))
-                    <p class="text-sm text-gray-700">Tidak ada data baru diproses. Cek detail di bawah.</p>
-                @endif
+                </div>
+                @forelse ($ringkas as $line)
+                    <div style="font-size:.85rem;color:#334155">• {{ $line }}</div>
+                @empty
+                    <div style="font-size:.85rem;color:#334155">Tidak ada data baru diproses. Cek detail di bawah.</div>
+                @endforelse
             </div>
 
             {{-- Detail per file --}}
-            <div class="rounded-xl border border-gray-200 bg-white p-4">
-                <p class="font-semibold mb-3">📋 Detail per file</p>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+            <div style="{{ $card }}">
+                <div style="font-weight:700;margin-bottom:.6rem">📋 Detail per file</div>
+                <div style="overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse">
                         <tbody>
                         @foreach ($report as $r)
-                            <tr class="border-t border-gray-100">
-                                <td class="py-2 pe-2 w-6 align-top">{{ $r['ok'] ? '✅' : '⏭️' }}</td>
-                                <td class="py-2 pe-3 font-mono text-xs break-all max-w-xs align-top">{{ $r['name'] }}</td>
-                                <td class="py-2 text-gray-600">
+                            <tr style="border-top:1px solid #f1f5f9">
+                                <td style="padding:.5rem .4rem;width:1.5rem;vertical-align:top">{{ $r['ok'] ? '✅' : '⏭️' }}</td>
+                                <td style="padding:.5rem .6rem .5rem 0;font-family:monospace;font-size:.72rem;word-break:break-all;max-width:18rem;vertical-align:top">{{ $r['name'] }}</td>
+                                <td style="padding:.5rem 0;font-size:.85rem;color:#475569">
                                     @if ($r['ok'])
-                                        <span class="font-medium text-gray-800">{{ $r['type'] }}</span> — {{ $r['detail'] ?? '' }}
+                                        <span style="font-weight:600;color:#1e293b">{{ $r['type'] }}</span> — {{ $r['detail'] ?? '' }}
                                     @else
-                                        <span class="text-amber-700">Dilewati: {{ $r['reason'] }}</span>
+                                        <span style="color:#b45309">Dilewati: {{ $r['reason'] }}</span>
                                     @endif
                                 </td>
                             </tr>
@@ -73,26 +77,27 @@
             </div>
 
             @if (!empty($summary['hpp_changes']))
-                <div class="rounded-xl border border-gray-200 bg-white p-4">
-                    <p class="font-semibold mb-3">💲 Perubahan harga HPP: {{ count($summary['hpp_changes']) }} SKU</p>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead class="text-xs text-gray-500 text-left">
-                                <tr><th class="py-1 pe-3">SKU</th><th class="py-1 pe-3">Produk</th><th class="py-1 pe-3 text-right">Lama</th><th class="py-1 pe-3 text-right">Baru</th></tr>
-                            </thead>
+                <div style="{{ $card }}">
+                    <div style="font-weight:700;margin-bottom:.6rem">💲 Perubahan harga HPP: {{ count($summary['hpp_changes']) }} SKU</div>
+                    <div style="overflow-x:auto">
+                        <table style="width:100%;border-collapse:collapse">
+                            <thead><tr style="text-align:left;color:#64748b;font-size:.72rem">
+                                <th style="padding:.3rem .6rem .3rem 0">SKU</th><th style="padding:.3rem .6rem .3rem 0">Produk</th>
+                                <th style="padding:.3rem .6rem .3rem 0;text-align:right">Lama</th><th style="padding:.3rem 0;text-align:right">Baru</th>
+                            </tr></thead>
                             <tbody>
                             @foreach (array_slice($summary['hpp_changes'], 0, 50) as $c)
-                                <tr class="border-t border-gray-100">
-                                    <td class="py-1 pe-3 font-mono text-xs">{{ $c['sku'] }}</td>
-                                    <td class="py-1 pe-3">{{ \Illuminate\Support\Str::limit($c['name'], 40) }}</td>
-                                    <td class="py-1 pe-3 text-right">Rp {{ number_format($c['old'], 0, ',', '.') }}</td>
-                                    <td class="py-1 pe-3 text-right">Rp {{ number_format($c['new'], 0, ',', '.') }}</td>
+                                <tr style="border-top:1px solid #f1f5f9;font-size:.82rem">
+                                    <td style="padding:.35rem .6rem .35rem 0;font-family:monospace;font-size:.72rem">{{ $c['sku'] }}</td>
+                                    <td style="padding:.35rem .6rem .35rem 0">{{ \Illuminate\Support\Str::limit($c['name'], 40) }}</td>
+                                    <td style="padding:.35rem .6rem .35rem 0;text-align:right">Rp {{ number_format($c['old'], 0, ',', '.') }}</td>
+                                    <td style="padding:.35rem 0;text-align:right;font-weight:600">Rp {{ number_format($c['new'], 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach
                             </tbody>
                         </table>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Pesanan lama tidak berubah kecuali Anda mencentang "Perbarui HPP pesanan lama".</p>
+                    <p style="font-size:.78rem;color:#64748b;margin:.6rem 0 0">Pesanan lama tidak berubah kecuali Anda mencentang "Perbarui HPP pesanan lama".</p>
                 </div>
             @endif
         @endif
