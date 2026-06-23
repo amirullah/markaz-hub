@@ -103,4 +103,28 @@ class BackupService
             return ['statements' => $n, 'orders' => DB::table('orders')->where('organization_id', $orgId)->count()];
         });
     }
+
+    /**
+     * Kosongkan data org. $scope: 'orders' (pesanan + item saja) atau 'all'
+     * (semua data bisnis: pesanan, produk, toko, supplier). Kategori, organisasi,
+     * dan user TIDAK disentuh. Org-scoped + dalam transaksi.
+     */
+    public function clearOrgData(int $orgId, string $scope = 'orders'): array
+    {
+        $tables = $scope === 'all'
+            ? self::DELETE_ORDER
+            : ['order_items', 'orders'];
+
+        return DB::transaction(function () use ($orgId, $tables) {
+            $pdo = DB::connection()->getPdo();
+            $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+            $deleted = [];
+            foreach ($tables as $table) {
+                $deleted[$table] = DB::table($table)->where('organization_id', $orgId)->delete();
+            }
+            $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+
+            return $deleted;
+        });
+    }
 }

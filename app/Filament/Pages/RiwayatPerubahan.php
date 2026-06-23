@@ -24,6 +24,15 @@ class RiwayatPerubahan extends Page
      */
     public const CHANGELOG = [
         [
+            'version' => '1.10',
+            'date' => '23 Jun 2026',
+            'title' => 'Kosongkan data',
+            'changes' => [
+                'Fitur Kosongkan Data di menu Backup: hapus "hanya pesanan" atau "semua data bisnis" untuk mulai dari awal.',
+                'Dilengkapi konfirmasi (ketik KOSONGKAN), hanya menghapus data milik Anda sendiri, dan saran backup dulu.',
+            ],
+        ],
+        [
             'version' => '1.9',
             'date' => '23 Jun 2026',
             'title' => 'Tampilan Pesanan lebih praktis',

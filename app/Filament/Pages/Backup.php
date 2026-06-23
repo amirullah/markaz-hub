@@ -6,6 +6,7 @@ use App\Services\BackupService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -62,6 +63,32 @@ class Backup extends Page
                         ->validationMessages(['in' => 'Ketik persis: PULIHKAN']),
                 ])
                 ->action(fn (array $data) => $this->runRestore($data)),
+
+            Action::make('clear')
+                ->label('Kosongkan Data')
+                ->icon(Heroicon::OutlinedTrash)
+                ->color('danger')
+                ->modalHeading('Kosongkan data')
+                ->modalDescription('PERHATIAN: data akan DIHAPUS PERMANEN dan tidak bisa dibatalkan. Sangat disarankan "Unduh Backup" dulu sebelum melanjutkan.')
+                ->modalSubmitActionLabel('Kosongkan sekarang')
+                ->modalIcon(Heroicon::OutlinedTrash)
+                ->schema([
+                    Select::make('scope')
+                        ->label('Yang dikosongkan')
+                        ->options([
+                            'orders' => 'Hanya Pesanan (pesanan + itemnya) — produk, toko, kategori tetap',
+                            'all' => 'Semua data bisnis (pesanan, produk, toko, supplier) — kategori tetap',
+                        ])
+                        ->default('orders')
+                        ->required()
+                        ->native(false),
+                    TextInput::make('konfirmasi')
+                        ->label('Ketik KOSONGKAN untuk melanjutkan')
+                        ->required()
+                        ->rule('in:KOSONGKAN')
+                        ->validationMessages(['in' => 'Ketik persis: KOSONGKAN']),
+                ])
+                ->action(fn (array $data) => $this->runClear($data)),
         ];
     }
 
@@ -99,6 +126,32 @@ class Backup extends Page
         } catch (\Throwable $e) {
             Notification::make()
                 ->title('Pemulihan gagal')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    protected function runClear(array $data): void
+    {
+        try {
+            $deleted = app(BackupService::class)->clearOrgData(
+                (int) auth()->user()->organization_id,
+                $data['scope'] ?? 'orders',
+            );
+            $total = array_sum($deleted);
+            $rincian = collect($deleted)
+                ->map(fn ($n, $t) => number_format((int) $n, 0, ',', '.') . ' ' . $t)
+                ->implode(', ');
+
+            Notification::make()
+                ->title('Data berhasil dikosongkan')
+                ->body("Total {$total} baris dihapus ({$rincian}).")
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Gagal mengosongkan data')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
