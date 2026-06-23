@@ -10,6 +10,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
@@ -38,7 +39,11 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => Color::Slate,
             ])
             ->sidebarCollapsibleOnDesktop()
-            ->sidebarWidth('13rem')
+            // Sidebar lebih lega agar label panjang ("Riwayat Perubahan") tak terpotong.
+            ->sidebarWidth('16rem')
+            // Konten memakai lebar penuh — tabel data & dashboard tak menyisakan celah
+            // kiri-kanan di layar lebar. Halaman form kustom tetap dibatasi sendiri (760px).
+            ->maxContentWidth(Width::Full)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             ->renderHook(
