@@ -45,7 +45,10 @@ class OrdersTable
                 TextColumn::make('store.name')
                     ->label('Toko')
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable()
+                    // Tampil hanya di layar lebar (>=1536px); di laptop disembunyikan agar
+                    // tabel muat tanpa geser — toko sering sama tiap baris & ada filter Toko.
+                    ->visibleFrom('2xl'),
                 TextColumn::make('marketplace')
                     ->label('Channel')
                     ->badge()
@@ -56,13 +59,17 @@ class OrdersTable
                         'TIKTOK' => 'TikTok',
                         default => $state,
                     })
-                    ->color(fn (string $state): string => $state === 'SHOPEE' ? 'warning' : 'success'),
+                    ->color(fn (string $state): string => $state === 'SHOPEE' ? 'warning' : 'success')
+                    ->toggleable(),
                 TextColumn::make('fulfillment')
                     ->label('Pemenuhan')
                     ->badge()
                     ->color(fn (string $state): string => $state === 'DROPSHIP' ? 'info' : 'gray')
                     ->formatStateUsing(fn (string $state): string => $state === 'DROPSHIP' ? 'Dropship' : 'Packing Sendiri')
-                    ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship()),
+                    ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship())
+                    // Sekunder: sembunyikan di laptop agar tabel muat; tampil di layar lebar.
+                    ->visibleFrom('2xl')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -81,7 +88,8 @@ class OrdersTable
                         'PAID' => 'Dibayar',
                         'PENDING' => 'Menunggu',
                         default => $state,
-                    }),
+                    })
+                    ->toggleable(),
                 TextColumn::make('product_revenue')
                     ->label('Omzet')
                     ->formatStateUsing(fn ($state): string => 'Rp ' . number_format((float) $state, 0, ',', '.'))
@@ -117,7 +125,8 @@ class OrdersTable
                         }
 
                         return 'Laba final & akurat — biaya asli, modal, & rincian item lengkap.';
-                    }),
+                    })
+                    ->toggleable(),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('items:id,order_id,product_id'))
             ->filters([
