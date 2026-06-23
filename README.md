@@ -1,58 +1,69 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# 🛍️ MarkazHub
 
-## About Laravel
+### Tahu laba aslimu, di setiap pesanan.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Aplikasi manajemen penjualan & laba untuk seller marketplace Indonesia — Shopee, Tokopedia/TikTok, dan dropship Jakmall — dalam satu tempat.**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+[🚀 Coba Aplikasinya](https://markazhub.mkz.my.id) · [✨ Fitur](#-fitur) · [🧰 Teknologi](#-teknologi)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)
+![Filament](https://img.shields.io/badge/Filament-v5-FDAE4B?logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)
+![Status](https://img.shields.io/badge/status-live-22c55e)
 
-## Learning Laravel
+</div>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ❓ Masalah yang dipecahkan
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Jualan ramai, tapi **untungnya berapa, sih?** Laporan marketplace berserakan di banyak file; biaya admin, ongkir, voucher, dan modal sulit dijumlahkan manual. Akhirnya banyak seller cuma **menebak** laba — dan tidak sadar ada produk yang ternyata **dijual di bawah modal**.
 
-## Agentic Development
+**MarkazHub** menggabungkan laporan-laporan itu, menghitung **laba bersih yang akurat** per pesanan, dan menunjukkan dengan jelas mana yang untung dan mana yang merugi.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## ✨ Fitur
+
+- 📥 **Impor laporan otomatis** — unggah file ekspor Shopee & Tokopedia/TikTok, sistem membaca & merapikan sendiri (deteksi channel, dropship, retur, cocokkan SKU).
+- 💰 **Laba bersih akurat & teraudit** — omzet − (modal + biaya admin + ongkir + voucher + dropship + biaya lain).
+- 📉 **Insight produk merugi** — temukan produk di bawah modal & pesanan rugi sebelum makin dalam.
+- 🧮 **Estimasi biaya admin per kategori** — pesanan tanpa laporan penghasilan tetap punya perkiraan laba (tarif resmi per kategori, bisa diatur).
+- 📊 **Dashboard informatif** — omzet, laba, margin, pesanan rugi, tren bulanan, dan omzet per channel.
+- 🗂️ **Kelola produk, kategori, toko, supplier** dengan pemilihan kategori produk otomatis.
+- 🔔 **Notifikasi**, 💾 **backup & restore**, 🗑️ **kosongkan data**, dan 📝 **log aktivitas**.
+- 🔐 **Multi-tenant aman** — data tiap seller terpisah; login praktis dengan Google.
+- 📱 **API-first** — siap untuk aplikasi mobile (Android/iOS) di masa depan.
+
+## 🧰 Teknologi
+
+| | |
+|---|---|
+| **Backend** | Laravel 13 (PHP 8.3) |
+| **Panel admin** | Filament v5 |
+| **Auth** | Login Google (Socialite) + Sanctum (API) |
+| **Database** | MySQL |
+| **Arsitektur** | Multi-tenant satu-database; logika bisnis di lapisan Service (dipakai bersama web & API) |
+
+## 🚀 Coba sekarang
+
+👉 **[markazhub.mkz.my.id](https://markazhub.mkz.my.id)** — masuk dengan akun Google, toko-mu langsung siap.
+
+## 🛠️ Menjalankan secara lokal
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone <repo-url> && cd markazhub-v2
+composer install
+cp .env.example .env && php artisan key:generate
+# atur koneksi database di .env
+php artisan migrate
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Buka `http://localhost:8000`.
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+<div align="center">
+Dibuat dengan ❤️ untuk para seller Indonesia. 🇮🇩
+</div>

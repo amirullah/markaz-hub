@@ -4,7 +4,8 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    // Sudah login → langsung ke aplikasi; selain itu tampilkan landing page.
+    return auth()->check() ? redirect('/admin') : view('landing');
 });
 
 // Login dengan Google (Gmail)
