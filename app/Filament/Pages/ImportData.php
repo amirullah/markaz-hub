@@ -298,13 +298,9 @@ class ImportData extends Page
     /** Kirim notifikasi (toast + lonceng) dgn body multi-baris yg jelas. */
     private function notify(string $title, array $lines, string $type): void
     {
-        $notif = Notification::make()
+        \App\Support\Bell::send(Notification::make()
             ->title($title)
             ->body(new HtmlString(implode('<br>', array_map('e', $lines))))
-            ->{$type}();
-        $notif->send();
-        if ($user = auth()->user()) {
-            $notif->sendToDatabase($user);
-        }
+            ->{$type}());
     }
 }

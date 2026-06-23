@@ -118,17 +118,15 @@ class Backup extends Page
                 (int) auth()->user()->organization_id,
                 (string) file_get_contents($file->getRealPath()),
             );
-            Notification::make()
+            \App\Support\Bell::send(Notification::make()
                 ->title('Data berhasil dipulihkan')
                 ->body("{$result['orders']} pesanan aktif setelah pemulihan.")
-                ->success()
-                ->send();
+                ->success());
         } catch (\Throwable $e) {
-            Notification::make()
+            \App\Support\Bell::send(Notification::make()
                 ->title('Pemulihan gagal')
                 ->body($e->getMessage())
-                ->danger()
-                ->send();
+                ->danger());
         }
     }
 
@@ -144,17 +142,15 @@ class Backup extends Page
                 ->map(fn ($n, $t) => number_format((int) $n, 0, ',', '.') . ' ' . $t)
                 ->implode(', ');
 
-            Notification::make()
+            \App\Support\Bell::send(Notification::make()
                 ->title('Data berhasil dikosongkan')
                 ->body("Total {$total} baris dihapus ({$rincian}).")
-                ->success()
-                ->send();
+                ->success());
         } catch (\Throwable $e) {
-            Notification::make()
+            \App\Support\Bell::send(Notification::make()
                 ->title('Gagal mengosongkan data')
                 ->body($e->getMessage())
-                ->danger()
-                ->send();
+                ->danger());
         }
     }
 }

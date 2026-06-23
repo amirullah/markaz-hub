@@ -26,11 +26,10 @@ class ListProducts extends ListRecords
                 ->modalSubmitActionLabel('Pasang otomatis sekarang')
                 ->action(function (): void {
                     $n = app(CategoryClassifier::class)->applyToOrg((int) auth()->user()->organization_id);
-                    Notification::make()
+                    \App\Support\Bell::send(Notification::make()
                         ->title("Kategori terpasang untuk {$n} produk")
                         ->body($n === 0 ? 'Semua produk sudah berkategori.' : 'Cek & sesuaikan bila ada yang kurang pas.')
-                        ->success()
-                        ->send();
+                        ->success());
                 }),
             CreateAction::make()->label('Buat Produk'),
         ];

@@ -67,12 +67,11 @@ class ListOrders extends ListRecords
                 ->modalSubmitActionLabel('Isi estimasi sekarang')
                 ->action(function (): void {
                     $res = app(AdminFeeEstimator::class)->applyToOrg((int) auth()->user()->organization_id);
-                    Notification::make()
+                    \App\Support\Bell::send(Notification::make()
                         ->title("Estimasi terisi untuk {$res['updated']} pesanan")
                         ->body('Total estimasi biaya admin: Rp ' . number_format($res['total'], 0, ',', '.')
                             . ($res['updated'] === 0 ? ' — pastikan produk sudah dipasangi kategori.' : ''))
-                        ->success()
-                        ->send();
+                        ->success());
                 }),
         ];
     }

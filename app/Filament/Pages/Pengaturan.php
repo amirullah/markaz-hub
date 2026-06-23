@@ -55,11 +55,11 @@ class Pengaturan extends Page
                             ->warning()->send();
                         return;
                     }
-                    Notification::make()
+                    \App\Support\Bell::send(Notification::make()
                         ->title('Tarif berhasil dikalibrasi dari data Anda')
                         ->body("Biaya efektif rata-rata: Shopee {$res['shopee_avg']}% · Tokopedia/TikTok {$res['tokotiktok_avg']}% (+ Rp1.250/pesanan). "
                             . "{$res['from_data']} kategori memakai tarif spesifik dari data, sisanya rata-rata channel. Estimasi {$res['reestimated']} pesanan diperbarui.")
-                        ->success()->send();
+                        ->success());
                 }),
 
             Action::make('ubah')
@@ -104,11 +104,10 @@ class Pengaturan extends Page
                     // Terapkan tarif baru ke estimasi pesanan yang belum final.
                     $res = app(AdminFeeEstimator::class)->applyToOrg((int) $org->id);
 
-                    Notification::make()
+                    \App\Support\Bell::send(Notification::make()
                         ->title('Pengaturan biaya disimpan')
                         ->body("Estimasi biaya diperbarui untuk {$res['updated']} pesanan (total Rp" . number_format($res['total'], 0, ',', '.') . '). Muat ulang halaman lain agar tampilan diperbarui.')
-                        ->success()
-                        ->send();
+                        ->success());
                 }),
         ];
     }
