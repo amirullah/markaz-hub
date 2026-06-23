@@ -52,7 +52,10 @@ class OrderForm
                         Select::make('marketplace')
                             ->label('Channel')
                             ->options(self::CHANNEL)
-                            ->required()
+                            // Ditetapkan saat impor — TIDAK boleh diubah (menentukan estimasi
+                            // komisi/biaya). disabled() => tak ikut tersimpan, tak menimpa data.
+                            ->disabled()
+                            ->helperText('Ditetapkan saat impor; tidak dapat diubah.')
                             ->native(false),
                         DateTimePicker::make('order_date')
                             ->label('Tanggal Pesanan')
@@ -84,7 +87,7 @@ class OrderForm
                             ->label('Omzet Produk')
                             ->required()->numeric()->minValue(0)->default(0)->prefix('Rp'),
                         TextInput::make('shipping_charged_to_buyer')
-                            ->label('Ongkir Dibebankan ke Pembeli')
+                            ->label('Ongkir dari Pembeli')
                             ->required()->numeric()->minValue(0)->default(0)->prefix('Rp'),
                         TextInput::make('other_income')
                             ->label('Pendapatan Lain')

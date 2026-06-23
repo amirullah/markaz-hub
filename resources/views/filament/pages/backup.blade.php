@@ -5,7 +5,7 @@
         $btnWrap = 'max-width:16rem';
     @endphp
 
-    <div style="display:flex;flex-direction:column;gap:1rem;max-width:760px">
+    <div style="display:flex;flex-direction:column;gap:1rem;max-width:760px;margin-inline:auto">
         <p style="margin:0;color:#475569;font-size:.9rem">Simpan cadangan data Anda, pulihkan dari cadangan, atau mulai dari awal. Tiap kotak punya tombolnya sendiri.</p>
 
         {{-- ===== 1) Unduh Backup ===== --}}

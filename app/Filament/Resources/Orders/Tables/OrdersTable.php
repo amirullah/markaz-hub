@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Services\ProfitService;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -16,6 +17,17 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrdersTable
 {
+    /** Preset periode — dipakai opsi Select & indikator filter aktif (DRY). */
+    private const PERIODE = [
+        'minggu_ini' => 'Minggu ini',
+        'bulan_ini' => 'Bulan ini',
+        'tahun_ini' => 'Tahun ini',
+        '30hari' => '30 hari terakhir',
+        'minggu_lalu' => 'Minggu lalu',
+        'bulan_lalu' => 'Bulan lalu',
+        'tahun_lalu' => 'Tahun lalu',
+    ];
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -130,10 +142,7 @@ class OrdersTable
                     ->schema([
                         Select::make('value')
                             ->label('Channel')
-                            ->options([
-                                'SHOPEE' => 'Shopee',
-                                'TIKTOKTOKO' => 'Tokopedia/TikTok',
-                            ])
+                            ->options(OrderForm::CHANNEL)
                             ->placeholder('Semua'),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
@@ -141,7 +150,11 @@ class OrdersTable
                         fn (Builder $query, $v): Builder => $v === 'SHOPEE'
                             ? $query->where('marketplace', 'SHOPEE')
                             : $query->whereIn('marketplace', ['TIKTOKTOKO', 'TOKOPEDIA', 'TIKTOK']),
-                    )),
+                    ))
+                    // Indikator filter aktif (chip) — Filter kustom tak otomatis menampilkannya.
+                    ->indicateUsing(fn (array $data): ?string => ($v = $data['value'] ?? null)
+                        ? 'Channel: ' . (OrderForm::CHANNEL[$v] ?? $v)
+                        : null),
                 SelectFilter::make('fulfillment')
                     ->label('Pemenuhan')
                     ->options([
@@ -166,21 +179,16 @@ class OrdersTable
                     ->schema([
                         Select::make('value')
                             ->label('Periode')
-                            ->options([
-                                'minggu_ini' => 'Minggu ini',
-                                'bulan_ini' => 'Bulan ini',
-                                'tahun_ini' => 'Tahun ini',
-                                '30hari' => '30 hari terakhir',
-                                'minggu_lalu' => 'Minggu lalu',
-                                'bulan_lalu' => 'Bulan lalu',
-                                'tahun_lalu' => 'Tahun lalu',
-                            ])
+                            ->options(self::PERIODE)
                             ->placeholder('Semua'),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         $data['value'] ?? null,
                         fn (Builder $query, $v): Builder => self::applyPeriode($query, $v),
-                    )),
+                    ))
+                    ->indicateUsing(fn (array $data): ?string => ($v = $data['value'] ?? null)
+                        ? 'Periode: ' . (self::PERIODE[$v] ?? $v)
+                        : null),
             ])
             // Filter tampil DI ATAS tabel (tak menutup data), ringkas & padat (sampai 4 kolom),
             // berlaku seketika. AboveContent agar user langsung lihat filter tersedia.
