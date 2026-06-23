@@ -191,6 +191,28 @@ class OrderImporter
     }
 
     /**
+     * Impor BIAYA DROPSHIP MANUAL (CSV/XLSX) — daftar buatan seller (No. Pesanan + Biaya).
+     * Pesanan yang cocok (by external_no) ditandai DROPSHIP + diisi biayanya.
+     */
+    public function importDropshipFile(string $path, string $name): array
+    {
+        $map = mp_generic_dropship($path, $name);
+        if (! $map) {
+            $t = mp_read_file($path, $name)['type'] ?? '';
+            if ($t === 'catalog') {
+                return ['ok' => false, 'reason' => 'File ini DAFTAR PRODUK, bukan daftar biaya dropship. Gunakan tombol "Impor Daftar Produk".'];
+            }
+            return ['ok' => false, 'reason' => 'Tidak ada data terbaca. Pastikan file punya kolom No. Pesanan dan Biaya Dropship.'];
+        }
+        $invoices = array_map('strval', array_keys($map));
+        $matched = DB::table('orders')->where('organization_id', $this->orgId)
+            ->whereIn('external_no', $invoices)->distinct()->count('external_no');
+        $updated = $this->backfillDropship($map);
+        return ['ok' => true, 'rows' => count($map), 'matched' => $matched,
+            'updated' => $updated, 'notfound' => max(0, count($map) - $matched)];
+    }
+
+    /**
      * Seed riwayat harga dari membandingkan 2 snapshot master (lama vs baru).
      * Mencatat satu perubahan per SKU yang harganya beda, dgn tanggal "Perubahan
      * Terakhir" master baru. Idempotent (lewati yg sudah tercatat sku+new_price).

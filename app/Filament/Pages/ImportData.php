@@ -119,7 +119,57 @@ class ImportData extends Page
                         ->helperText('Default: pesanan lama tetap memakai harga modal saat itu (riwayat terjaga). Aktifkan hanya bila ingin menimpa.'),
                 ])
                 ->action(fn (array $data) => $this->runCatalogImport($data)),
+
+            Action::make('dropship')
+                ->label('Impor Biaya Dropship')
+                ->icon(Heroicon::OutlinedTruck)
+                ->color('gray')
+                ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship())
+                ->modalHeading('Impor biaya dropship manual (per pesanan)')
+                ->modalDescription('Untuk dropship dari sumber yang TIDAK punya laporan otomatis (mis. supplier / seller lain). File berisi: No. Pesanan (dari marketplace) & Biaya Dropship. Pesanan yang cocok otomatis ditandai Dropship & biayanya terisi.')
+                ->modalSubmitActionLabel('Impor biaya dropship')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('File biaya dropship (Excel .xlsx atau CSV)')
+                        ->storeFiles(false)
+                        ->required()
+                        ->helperText('Kolom wajib: No. Pesanan, Biaya Dropship. Opsional: Modal Produk (untuk hitung "seandainya packing sendiri").')
+                        ->rules([
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail): void {
+                                $f = is_array($value) ? ($value[0] ?? null) : $value;
+                                if ($f instanceof \Illuminate\Http\UploadedFile
+                                    && ! in_array(strtolower($f->getClientOriginalExtension()), ['xlsx', 'xls', 'csv', 'txt'], true)) {
+                                    $fail('Format harus Excel (.xlsx, .xls) atau CSV.');
+                                }
+                            },
+                        ]),
+                ])
+                ->action(fn (array $data) => $this->runDropshipImport($data)),
         ];
+    }
+
+    protected function runDropshipImport(array $data): void
+    {
+        $file = $data['file'] ?? null;
+        if (! $file || ! $file->getRealPath()) {
+            Notification::make()->title('Belum ada file dipilih')->warning()->send();
+            return;
+        }
+
+        $res = (new OrderImporter((int) auth()->user()->organization_id))
+            ->importDropshipFile($file->getRealPath(), $file->getClientOriginalName());
+
+        if (! ($res['ok'] ?? false)) {
+            Notification::make()->title('Impor biaya dropship gagal')->body($res['reason'] ?? '')->danger()->send();
+            return;
+        }
+
+        Notification::make()
+            ->title("Biaya dropship diimpor: {$res['updated']} pesanan diperbarui")
+            ->body("{$res['rows']} baris dibaca · {$res['matched']} pesanan cocok"
+                . ($res['notfound'] ? " · {$res['notfound']} No. Pesanan tidak ditemukan di sistem" : ''))
+            ->success()
+            ->send();
     }
 
     protected function runCatalogImport(array $data): void

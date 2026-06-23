@@ -372,6 +372,43 @@ function mp_generic_catalog(string $path, string $name): array
     return $out;
 }
 
+/**
+ * Parser BIAYA DROPSHIP MANUAL (CSV/XLSX) — daftar buatan seller sendiri.
+ * Kolom: No. Pesanan (cocok ke external_no marketplace), Biaya Dropship (total).
+ * Opsional: Modal Produk (untuk hitung "seolah packing sendiri"). Format peta = mp_dropship_report.
+ */
+function mp_generic_dropship(string $path, string $name): array
+{
+    $ext = strtolower(pathinfo($name !== '' ? $name : $path, PATHINFO_EXTENSION));
+    if ($ext === 'csv' || $ext === 'txt') {
+        $assoc = mp_read_csv($path);
+    } else {
+        $assoc = [];
+        foreach (xlsx_read($path) as $rows) {
+            foreach (['no. pesanan', 'no pesanan', 'nomor pesanan', 'kode invoice channel', 'order id', 'invoice'] as $col) {
+                $hi = mp_header_index($rows, [$col], 8);
+                if ($hi >= 0) { $assoc = mp_assoc_rows($rows, $hi); break 2; }
+            }
+        }
+    }
+    $map = [];
+    foreach ($assoc as $r) {
+        $inv = mp_pick($r, ['no. pesanan', 'no pesanan', 'nomor pesanan', 'kode invoice channel', 'order id', 'order sn', 'invoice', 'kode pesanan']);
+        if (!$inv) continue;
+        $total = mp_num(mp_pick($r, ['biaya dropship', 'total dropship', 'total transaksi', 'total biaya', 'total', 'biaya']));
+        $modal = mp_num(mp_pick($r, ['modal produk', 'total harga produk', 'harga produk', 'modal', 'hpp']));
+        if ($total <= 0 && $modal <= 0) continue;
+        if ($total <= 0) $total = $modal;           // hanya modal diberikan
+        if ($modal <= 0) $modal = $total;           // hanya total → dropship_modal = total (aman, tak ada penghematan palsu)
+        if (isset($map[$inv])) {
+            $map[$inv]['total'] += $total; $map[$inv]['productCost'] += $modal;
+        } else {
+            $map[$inv] = ['total' => $total, 'productCost' => $modal, 'partnerFee' => 0, 'additional' => 0, 'jakmallCode' => ''];
+        }
+    }
+    return $map;
+}
+
 // ---------- Adapter: Laporan Pesanan Dropship (deteksi dropship + biaya) ----------
 // Kembalikan peta: No. Pesanan channel (Shopee) => biaya dropship Dropship.
 // "Kode Invoice Channel" = nomor pesanan marketplace. Total Transaksi sudah
