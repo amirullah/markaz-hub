@@ -43,7 +43,7 @@
             @php
                 $ok = collect($report)->where('ok', true)->count();
                 $fail = collect($report)->where('ok', false)->count();
-                $ringkas = array_filter([$summary['jakmall'] ?? null, $summary['orders'] ?? null, $summary['dropship'] ?? null]);
+                $ringkas = array_filter([$summary['catalog'] ?? null, $summary['orders'] ?? null, $summary['dropship'] ?? null]);
             @endphp
 
             {{-- Ringkasan menonjol --}}

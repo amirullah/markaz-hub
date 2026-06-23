@@ -28,14 +28,14 @@
     {
       "id": "dropship_real_260509UT4XAG92",
       "label": "Dropship Shopee (kasus nyata) — rugi tipis",
-      "why": "Dropship: cogs=0, modal=dropship_cost (Total Transaksi Jakmall). Net < modal Jakmall -> rugi nyata.",
+      "why": "Dropship: cogs=0, modal=dropship_cost (Total Transaksi Dropship). Net < modal Dropship -> rugi nyata.",
       "input": { "product_revenue": 85306, "admin_fee": 21735, "voucher_seller_borne": 2434, "dropship_cost": 71000, "cogs": 0 },
       "expected_profit": -9863,
       "expected_net": 61137
     },
     {
       "id": "dropship_with_partner_fee",
-      "label": "Dropship untung (modal Jakmall termasuk biaya mitra)",
+      "label": "Dropship untung (modal Dropship termasuk biaya mitra)",
       "why": "dropship_cost = produk + mitra + tambahan",
       "input": { "product_revenue": 120000, "admin_fee": 25000, "dropship_cost": 80000, "cogs": 0 },
       "expected_profit": 15000

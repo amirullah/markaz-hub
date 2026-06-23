@@ -28,10 +28,10 @@ class ProfitService
     public const SQL_NET = '(product_revenue + other_income - (admin_fee + shipping_cost_seller + voucher_seller_borne + other_cost))';
 
     /**
-     * Ekspresi SQL biaya dropship aktif sesuai toggle Jakmall:
-     * - Jakmall AKTIF   → 'dropship_cost' (total ke Jakmall = modal + biaya mitra)
-     * - Jakmall NONAKTIF → modal historis (seolah packing sendiri). Bila modal historis
-     *   belum terisi (0, mis. laporan Jakmall belum di-upload ulang), JATUH ke dropship_cost
+     * Ekspresi SQL biaya dropship aktif sesuai toggle Dropship:
+     * - Dropship AKTIF   → 'dropship_cost' (total ke Dropship = modal + biaya mitra)
+     * - Dropship NONAKTIF → modal historis (seolah packing sendiri). Bila modal historis
+     *   belum terisi (0, mis. laporan Dropship belum di-upload ulang), JATUH ke dropship_cost
      *   agar biaya tidak hilang & laba tidak menggelembung palsu.
      * Default 'dropship_cost' (aman tanpa auth / golden test = perilaku v1).
      */
@@ -43,7 +43,7 @@ class ProfitService
     }
 
     /**
-     * Ekspresi SQL laba MENGIKUTI toggle Jakmall (untuk dashboard/list/insight).
+     * Ekspresi SQL laba MENGIKUTI toggle Dropship (untuk dashboard/list/insight).
      */
     public static function sqlProfit(): string
     {
@@ -51,7 +51,7 @@ class ProfitService
             . self::dropshipExpr() . ' + other_cost))';
     }
 
-    /** Biaya dropship efektif (PHP) sesuai toggle Jakmall, dgn fallback aman. */
+    /** Biaya dropship efektif (PHP) sesuai toggle Dropship, dgn fallback aman. */
     private function effectiveDropship(array|object $o): float
     {
         if (\App\Models\Organization::currentUsesDropship()) {

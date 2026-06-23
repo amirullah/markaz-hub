@@ -52,7 +52,7 @@ class OrderInfolist
                 ->columns(3)
                 ->schema([
                     TextEntry::make('cogs')->label('HPP / Modal')
-                        // Saat Jakmall nonaktif, pesanan dropship dihitung pakai modal historis
+                        // Saat Dropship nonaktif, pesanan dropship dihitung pakai modal historis
                         // (fallback ke total dropship bila modal historis belum terisi).
                         ->state(function ($record): float {
                             $cogs = (float) $record->cogs;

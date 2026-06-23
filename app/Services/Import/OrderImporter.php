@@ -16,7 +16,7 @@ class OrderImporter
 
     public function __construct(private int $orgId)
     {
-        // Org yang tidak memakai Jakmall: file master/laporan Jakmall dilewati saat import.
+        // Org yang tidak memakai Dropship: file master/laporan Dropship dilewati saat import.
         $this->usesDropship = (bool) (DB::table('organizations')->where('id', $orgId)->value('uses_dropship') ?? true);
     }
 
@@ -31,24 +31,24 @@ class OrderImporter
         $srcLabel = [
             'shopee_income' => 'Laporan Penghasilan Shopee', 'shopee_order' => 'Order Completed Shopee',
             'tiktok_income' => 'Laporan Penghasilan Tokopedia/TikTok', 'csv' => 'Pesanan Selesai Tokopedia/TikTok',
-            'jakmall' => 'Master Produk / Katalog', 'jakmall_orders' => 'Laporan Dropship', 'generic_xlsx' => 'File pesanan',
+            'catalog' => 'Master Produk / Katalog', 'dropship_report' => 'Laporan Dropship', 'generic_xlsx' => 'File pesanan',
         ];
-        $report = []; $orderSources = []; $orderFiles = []; $jakmall = []; $dropshipMap = []; $hasJakmallReport = false;
+        $report = []; $orderSources = []; $orderFiles = []; $catalog = []; $dropshipMap = []; $hasDropshipReport = false;
 
         foreach ($files as $f) {
             $name = $f['name']; $res = mp_read_file($f['path'], $name);
             $label = $srcLabel[$res['source'] ?? ''] ?? 'File';
-            // Org non-Jakmall: lewati hanya LAPORAN PESANAN (dropship). Master produk
+            // Org non-Dropship: lewati hanya LAPORAN PESANAN (dropship). Master produk
             // tetap diproses karena = katalog harga/HPP + riwayat harga (relevan walau dropship off).
-            if (! $this->usesDropship && ($res['type'] ?? '') === 'jakmall_orders') {
+            if (! $this->usesDropship && ($res['type'] ?? '') === 'dropship_report') {
                 $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Laporan dropship dilewati — organisasi tidak berjualan dropship (atur di menu Pengaturan). Master produk/katalog tetap diproses.'];
                 continue;
             }
-            if ($res['type'] === 'jakmall') {
-                foreach ($res['products'] as $p) $jakmall[$p['sku']] = $p;
+            if ($res['type'] === 'catalog') {
+                foreach ($res['products'] as $p) $catalog[$p['sku']] = $p;
                 $report[] = ['name' => $name, 'ok' => true, 'type' => $label, 'detail' => count($res['products']) . ' produk'];
-            } elseif ($res['type'] === 'jakmall_orders') {
-                $hasJakmallReport = true;
+            } elseif ($res['type'] === 'dropship_report') {
+                $hasDropshipReport = true;
                 foreach ($res['dropship'] as $no => $info) $dropshipMap[$no] = $info;
                 $report[] = ['name' => $name, 'ok' => true, 'type' => $label, 'detail' => count($res['dropship']) . ' pesanan dropship'];
             } elseif ($res['type'] === 'orders' && !empty($res['orders'])) {
@@ -74,19 +74,19 @@ class OrderImporter
         $orderSources = $matched;
 
         $summary = [];
-        if ($jakmall) {
-            [$ins, $upd, $changes, $skippedOld] = $this->importJakmallProducts(array_values($jakmall));
+        if ($catalog) {
+            [$ins, $upd, $changes, $skippedOld] = $this->importCatalog(array_values($catalog));
             $bf = $this->backfillHpp();
             if ($updateOldHpp) $bf += $this->recomputeHpp($hppSince);
-            $summary['jakmall'] = "Master: $ins baru, $upd diperbarui" . ($changes ? ', ' . count($changes) . ' harga berubah' : '')
+            $summary['catalog'] = "Master: $ins baru, $upd diperbarui" . ($changes ? ', ' . count($changes) . ' harga berubah' : '')
                 . ($skippedOld ? ", $skippedOld dilewati (data lebih lama)" : '') . ($bf ? ", $bf pesanan ber-HPP" : '') . '.';
             $summary['hpp_changes'] = $changes;
         }
         if ($orderSources) {
             $orders = mp_merge_orders($orderSources);
-            $summary['orders'] = $this->importOrders($orders, $storeId, $storeMarketplace, $dropshipMap, $hasJakmallReport, 'SELF');
+            $summary['orders'] = $this->importOrders($orders, $storeId, $storeMarketplace, $dropshipMap, $hasDropshipReport, 'SELF');
         }
-        if ($hasJakmallReport) {
+        if ($hasDropshipReport) {
             $bf = $this->backfillDropship($dropshipMap);
             $summary['dropship'] = "Laporan dropship: " . count($dropshipMap) . " pesanan dropship; $bf pesanan lama diperbarui.";
         }
@@ -94,13 +94,13 @@ class OrderImporter
         return ['report' => $report, 'summary' => $summary];
     }
 
-    /** Upsert katalog Jakmall (produk + ID marketplace) + deteksi perubahan harga. */
-    public function importJakmallProducts(array $products): array
+    /** Upsert katalog Dropship (produk + ID marketplace) + deteksi perubahan harga. */
+    public function importCatalog(array $products): array
     {
-        $supId = DB::table('suppliers')->where('organization_id', $this->orgId)->where('type', 'JAKMALL')->value('id');
+        $supId = DB::table('suppliers')->where('organization_id', $this->orgId)->where('type', 'DROPSHIP')->value('id');
         if (! $supId) {
             $supId = DB::table('suppliers')->insertGetId([
-                'organization_id' => $this->orgId, 'name' => 'Jakmall', 'type' => 'JAKMALL',
+                'organization_id' => $this->orgId, 'name' => 'Dropship', 'type' => 'DROPSHIP',
                 'note' => 'Dropship', 'created_at' => now(), 'updated_at' => now(),
             ]);
         }
@@ -113,7 +113,7 @@ class OrderImporter
             $sku = $p['sku'] ?? '';
             if ($sku === '') continue;
             $new = (float) $p['cost'];
-            $changedAt = mp_jakmall_date($p['changedAt'] ?? null); // tgl "Perubahan Terakhir" dari master
+            $changedAt = mp_flex_date($p['changedAt'] ?? null); // tgl "Perubahan Terakhir" dari master
             $exists = array_key_exists($sku, $oldCost);
             $curDate = $oldDate[$sku] ?? null;
 
@@ -176,7 +176,7 @@ class OrderImporter
             if ($old === null || abs($old - $new) <= 1) continue;
             if (isset($existing[$sku . '|' . $new])) continue; // sudah tercatat
             $rows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'old_price' => $old,
-                'new_price' => $new, 'changed_at' => mp_jakmall_date($p['changedAt'] ?? null) ?? $now,
+                'new_price' => $new, 'changed_at' => mp_flex_date($p['changedAt'] ?? null) ?? $now,
                 'created_at' => $now, 'updated_at' => $now];
         }
         foreach (array_chunk($rows, 500) as $c) {
@@ -210,13 +210,13 @@ class OrderImporter
         return DB::update("UPDATE orders o SET o.cogs=COALESCE((SELECT SUM(i.unit_cost*i.qty) FROM order_items i WHERE i.order_id=o.id),0) WHERE $cond", [$this->orgId]);
     }
 
-    /** Backfill DROPSHIP + modal Jakmall pada pesanan lama yang cocok laporan. */
+    /** Backfill DROPSHIP + modal Dropship pada pesanan lama yang cocok laporan. */
     public function backfillDropship(array $dropshipMap): int
     {
         $n = 0;
         foreach ($dropshipMap as $no => $jak) {
             $modal = (float) ($jak['productCost'] ?? 0); // Total Harga Produk = modal historis (biaya bila packing sendiri)
-            $note = mb_substr('Dropship' . (!empty($jak['jakmallCode']) ? ' #' . $jak['jakmallCode'] : '') .
+            $note = mb_substr('Dropship' . (!empty($jak['dropshipCode']) ? ' #' . $jak['dropshipCode'] : '') .
                 ': total Rp' . number_format($jak['total'], 0, ',', '.') . ', modal Rp' . number_format($modal, 0, ',', '.'), 0, 500);
             $n += DB::update("UPDATE orders SET fulfillment='DROPSHIP', dropship_cost=?, dropship_modal=?, cogs=0, note=?
                 WHERE organization_id=? AND external_no=? AND status NOT IN ('CANCELLED','RETURNED') AND deleted_at IS NULL
@@ -227,7 +227,7 @@ class OrderImporter
     }
 
     /** PORT import_shopee_orders: merge + resolusi SKU + hitung + tulis (org-scoped). */
-    public function importOrders(array $orders, int $storeId, string $storeMarketplace, array $dropshipMap, bool $hasJakmallReport, string $defaultFulfillment): string
+    public function importOrders(array $orders, int $storeId, string $storeMarketplace, array $dropshipMap, bool $hasDropshipReport, string $defaultFulfillment): string
     {
         if (! $orders) return 'Tidak ada pesanan.';
         $org = $this->orgId;
@@ -245,7 +245,7 @@ class OrderImporter
             $prepared[] = ['ex' => $ex ? (array) $ex : null, 'exItems' => $exItems, 'o' => $o];
         }
 
-        // ID Produk -> SKU (dari Master Jakmall, org-scoped).
+        // ID Produk -> SKU (dari Master Dropship, org-scoped).
         $skuByMpId = [];
         if ($mpIds) {
             foreach (array_chunk(array_keys($mpIds), 500) as $chunk) {
@@ -282,7 +282,7 @@ class OrderImporter
             $jak = $dropshipMap[$no] ?? null;
             if ($jak) $ful = 'DROPSHIP';
             elseif ($ex && $ex['fulfillment'] === 'DROPSHIP') $ful = 'DROPSHIP';
-            elseif ($hasJakmallReport) $ful = 'SELF';
+            elseif ($hasDropshipReport) $ful = 'SELF';
             elseif ($ex) $ful = $ex['fulfillment'];
             else $ful = $defaultFulfillment;
 
@@ -301,7 +301,7 @@ class OrderImporter
                 if ($jak) {
                     $dropship = (float) $jak['total'];
                     $dropshipModal = (float) ($jak['productCost'] ?? 0); // modal historis = biaya bila packing sendiri
-                    $note = mb_substr('Dropship' . (!empty($jak['jakmallCode']) ? ' #' . $jak['jakmallCode'] : '') . ': total Rp' . number_format($jak['total'], 0, ',', '.') . ', modal Rp' . number_format($dropshipModal, 0, ',', '.'), 0, 500);
+                    $note = mb_substr('Dropship' . (!empty($jak['dropshipCode']) ? ' #' . $jak['dropshipCode'] : '') . ': total Rp' . number_format($jak['total'], 0, ',', '.') . ', modal Rp' . number_format($dropshipModal, 0, ',', '.'), 0, 500);
                 } elseif ($ex && $ex['fulfillment'] === 'DROPSHIP') {
                     $dropship = (float) $ex['dropship_cost']; $dropshipModal = (float) ($ex['dropship_modal'] ?? 0); $note = $ex['note'];
                 } else {

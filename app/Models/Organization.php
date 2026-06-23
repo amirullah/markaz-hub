@@ -28,15 +28,15 @@ class Organization extends Model
     }
 
     /**
-     * Apakah org user saat ini memakai Jakmall (dropship)? Dipakai untuk menyembunyikan
-     * UI dropship bila seller tidak pakai Jakmall. Default true (aman bila kolom belum ada).
+     * Apakah org user saat ini memakai Dropship (dropship)? Dipakai untuk menyembunyikan
+     * UI dropship bila seller tidak pakai Dropship. Default true (aman bila kolom belum ada).
      */
     public static function currentUsesDropship(): bool
     {
         try {
             return (bool) (auth()->user()?->organization?->uses_dropship ?? true);
         } catch (\Throwable $e) {
-            // Tanpa konteks auth (mis. unit test murni) → default Jakmall aktif (perilaku v1).
+            // Tanpa konteks auth (mis. unit test murni) → default Dropship aktif (perilaku v1).
             return true;
         }
     }

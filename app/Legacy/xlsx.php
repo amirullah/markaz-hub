@@ -2,7 +2,7 @@
 // Pembaca file .xlsx tanpa library eksternal (cukup ZipArchive + parsing string),
 // supaya jalan di shared hosting biasa. Mengembalikan tiap sheet sebagai array
 // baris; tiap baris array nilai sel terindeks kolom (mulai 0). Nilai dikembalikan
-// sebagai string apa adanya (tanggal Shopee/Jakmall memang disimpan sebagai teks).
+// sebagai string apa adanya (tanggal Shopee/Dropship memang disimpan sebagai teks).
 
 // Ubah huruf kolom Excel (A, B, ..., AA) menjadi indeks 0-based.
 function xlsx_col_index(string $ref): int

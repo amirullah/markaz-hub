@@ -24,9 +24,23 @@ function mp_pick(array $row, array $candidates): ?string
     return null;
 }
 
+// Cocokkan kolom secara SEBAGIAN (substring ter-normalisasi) — untuk nama kolom
+// panjang/varian supplier. Mengembalikan nilai kolom pertama yang mengandung needle.
+function mp_pick_like(array $row, string $needle): ?string
+{
+    $n = mp_norm_key($needle);
+    if ($n === '') return null;
+    foreach ($row as $k => $v) {
+        if ($v !== '' && $v !== null && str_contains((string) $k, $n)) {
+            return $v;
+        }
+    }
+    return null;
+}
+
 // Parse angka gaya Indonesia: koma = desimal, titik = pemisah ribuan.
 // Contoh: "Rp1.250.000,50" -> 1250000.5 ; "30.347" -> 30347 ; "20.881" -> 20881.
-// Catatan: ekspor Shopee/Jakmall sering menulis rupiah sebagai TEKS dengan titik
+// Catatan: ekspor Shopee/Dropship sering menulis rupiah sebagai TEKS dengan titik
 // ribuan (mis. "187.271"), jadi titik tunggal berpola grup-3-digit = ribuan.
 function mp_num(?string $v): float
 {
@@ -202,7 +216,7 @@ function mp_parse_date(?string $raw): string
 {
     if (!$raw) return date('Y-m-d H:i:s');
     $raw = trim($raw);
-    // Tokopedia/TikTok & Jakmall menulis tanggal DD/MM/YYYY. strtotime menganggap
+    // Tokopedia/TikTok & Dropship menulis tanggal DD/MM/YYYY. strtotime menganggap
     // garis miring = M/D/Y (gaya AS), jadi salah baca. Ubah dulu ke Y-M-D.
     // (Format Y/M/D "2026/06/17" dan ISO "2026-06-14" tidak ikut terpola.)
     if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})(.*)$#', $raw, $m)) {
@@ -267,9 +281,9 @@ function mp_abs_sum(array $row, array $candidates): float
     return $sum;
 }
 
-// ---------- Adapter: Master Produk Jakmall ----------
+// ---------- Adapter: Master Produk Dropship ----------
 // Kembalikan daftar produk [sku, name, cost] dari kolom Kode SKU / Nama / Harga.
-function mp_jakmall_products(array $assoc): array
+function mp_catalog_products(array $assoc): array
 {
     $out = [];
     foreach ($assoc as $r) {
@@ -292,10 +306,10 @@ function mp_jakmall_products(array $assoc): array
 }
 
 /**
- * Parse tanggal master Jakmall "21 Jun 26, 00:56" (singkatan bulan Indonesia/Inggris)
+ * Parse tanggal master Dropship "21 Jun 26, 00:56" (singkatan bulan Indonesia/Inggris)
  * jadi 'Y-m-d H:i:s'. Kembalikan null bila tak terbaca.
  */
-function mp_jakmall_date(?string $s): ?string
+function mp_flex_date(?string $s): ?string
 {
     $s = trim((string) $s);
     if ($s === '') return null;
@@ -308,19 +322,19 @@ function mp_jakmall_date(?string $s): ?string
     return sprintf('%04d-%02d-%02d %02d:%02d:00', $yr, $mon, (int) $m[1], (int) $m[4], (int) $m[5]);
 }
 
-// ---------- Adapter: Laporan Pesanan Jakmall (deteksi dropship + biaya) ----------
-// Kembalikan peta: No. Pesanan channel (Shopee) => biaya dropship Jakmall.
+// ---------- Adapter: Laporan Pesanan Dropship (deteksi dropship + biaya) ----------
+// Kembalikan peta: No. Pesanan channel (Shopee) => biaya dropship Dropship.
 // "Kode Invoice Channel" = nomor pesanan marketplace. Total Transaksi sudah
-// termasuk Biaya Mitra Jakmall + Biaya Tambahan. Satu pesanan channel bisa
+// termasuk Biaya Mitra Dropship + Biaya Tambahan. Satu pesanan channel bisa
 // punya >1 baris (digabung/dijumlahkan).
-function mp_jakmall_orders(array $assoc): array
+function mp_dropship_report(array $assoc): array
 {
     $map = [];
     foreach ($assoc as $r) {
         $inv = mp_pick($r, ['kode invoice channel']);
         if (!$inv) continue;
         $product = mp_num(mp_pick($r, ['total harga produk']));
-        $partner = mp_num(mp_pick($r, ['biaya mitra jakmall']));
+        $partner = mp_num(mp_pick_like($r, 'biayamitra') ?? mp_pick($r, ['biaya partner', 'biaya supplier']));
         $extra   = mp_num(mp_pick($r, ['biaya tambahan']));
         $total   = mp_num(mp_pick($r, ['total transaksi']));
         if ($total <= 0) $total = $product + $partner + $extra;
@@ -331,7 +345,7 @@ function mp_jakmall_orders(array $assoc): array
             $map[$inv]['total']       += $total;
         } else {
             $map[$inv] = [
-                'jakmallCode' => mp_pick($r, ['kode pesanan']),
+                'dropshipCode' => mp_pick($r, ['kode pesanan']),
                 'store'       => mp_pick($r, ['nama toko']),
                 'productCost' => $product,
                 'partnerFee'  => $partner,
@@ -467,7 +481,7 @@ function mp_tiktok_income_to_orders(array $assoc): array
 }
 
 // ---------- Dispatcher: baca satu file -> {type, payload} ----------
-// type: 'jakmall' | 'orders' (ternormalisasi siap merge) | 'unknown'
+// type: 'catalog' | 'orders' (ternormalisasi siap merge) | 'unknown'
 function mp_read_file(string $path, string $origName = ''): array
 {
     $ext = strtolower(pathinfo($origName !== '' ? $origName : $path, PATHINFO_EXTENSION));
@@ -482,19 +496,19 @@ function mp_read_file(string $path, string $origName = ''): array
     $sheets = xlsx_read($path);
     if (!$sheets) return ['type' => 'unknown'];
 
-    // 1) Laporan Pesanan Jakmall (deteksi dropship)?
+    // 1) Laporan Pesanan Dropship (deteksi dropship)?
     foreach ($sheets as $rows) {
         $hi = mp_header_index($rows, ['kode invoice channel', 'total transaksi'], 5);
         if ($hi >= 0) {
-            return ['type' => 'jakmall_orders', 'dropship' => mp_jakmall_orders(mp_assoc_rows($rows, $hi)), 'source' => 'jakmall_orders'];
+            return ['type' => 'dropship_report', 'dropship' => mp_dropship_report(mp_assoc_rows($rows, $hi)), 'source' => 'dropship_report'];
         }
     }
 
-    // 2) Master Produk Jakmall?
+    // 2) Master Produk Dropship?
     foreach ($sheets as $rows) {
         $hi = mp_header_index($rows, ['kode sku', 'harga'], 5);
         if ($hi >= 0) {
-            return ['type' => 'jakmall', 'products' => mp_jakmall_products(mp_assoc_rows($rows, $hi)), 'source' => 'jakmall'];
+            return ['type' => 'catalog', 'products' => mp_catalog_products(mp_assoc_rows($rows, $hi)), 'source' => 'catalog'];
         }
     }
 
