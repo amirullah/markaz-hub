@@ -132,14 +132,16 @@ class OrdersTable
                     ->preload(),
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'COMPLETED' => 'Selesai',
-                        'SHIPPED' => 'Dikirim',
-                        'CANCELLED' => 'Dibatalkan',
-                        'RETURNED' => 'Dikembalikan',
-                        'PAID' => 'Dibayar',
-                        'PENDING' => 'Menunggu',
-                    ]),
+                    // Opsi MENYESUAIKAN data: hanya status yang benar-benar ada di pesanan toko ini.
+                    ->options(function (): array {
+                        $labels = [
+                            'COMPLETED' => 'Selesai', 'SHIPPED' => 'Dikirim', 'CANCELLED' => 'Dibatalkan',
+                            'RETURNED' => 'Dikembalikan', 'PAID' => 'Dibayar', 'PENDING' => 'Menunggu',
+                        ];
+
+                        return \App\Models\Order::query()->distinct()->orderBy('status')->pluck('status')
+                            ->mapWithKeys(fn ($s): array => [$s => $labels[$s] ?? $s])->all();
+                    }),
                 Filter::make('channel')
                     ->schema([
                         Select::make('value')
