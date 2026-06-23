@@ -48,7 +48,7 @@ class Backup extends Page
                         ->required()
                         ->helperText('Hanya file .sql yang diunduh dari menu ini.')
                         ->rules([
-                            function (string $attribute, $value, \Closure $fail): void {
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail): void {
                                 $f = is_array($value) ? ($value[0] ?? null) : $value;
                                 if ($f instanceof \Illuminate\Http\UploadedFile
                                     && strtolower($f->getClientOriginalExtension()) !== 'sql') {

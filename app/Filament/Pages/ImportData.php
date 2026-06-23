@@ -42,10 +42,18 @@ class ImportData extends Page
                 ->schema([
                     Select::make('store_id')
                         ->label('Toko tujuan')
-                        ->options(fn () => Store::query()->orderBy('name')->pluck('name', 'id'))
+                        ->options(fn () => Store::query()->orderBy('name')->get()->mapWithKeys(fn (Store $s) => [
+                            $s->id => $s->name . ' — ' . (match ($s->marketplace) {
+                                'SHOPEE' => 'Shopee',
+                                'TIKTOKTOKO' => 'Tokopedia/TikTok',
+                                'TOKOPEDIA' => 'Tokopedia',
+                                'TIKTOK' => 'TikTok',
+                                default => $s->marketplace,
+                            }),
+                        ]))
                         ->required()
                         ->native(false)
-                        ->helperText('File Shopee ke toko Shopee, file Tokopedia/TikTok ke toko Tokopedia/TikTok. File beda channel otomatis dilewati.'),
+                        ->helperText('Pilih toko sesuai channel file (nama toko + channel ditampilkan). File beda channel otomatis dilewati.'),
                     FileUpload::make('files')
                         ->label('File ekspor (.xlsx / .csv) — boleh beberapa sekaligus')
                         ->multiple()
@@ -53,8 +61,11 @@ class ImportData extends Page
                         ->helperText('Pilih file ekspor Shopee / Tokopedia / TikTok (Excel .xlsx/.xls atau CSV). File beda channel otomatis dilewati saat proses.')
                         // Validasi berdasarkan EKSTENSI (pasti) — bukan MIME browser yang rapuh
                         // (Windows sering melaporkan .xlsx sebagai application/x-zip-compressed).
+                        // Validasi ekstensi. Dibungkus outer closure (fn () => ...) karena
+                        // Filament v5 meng-evaluate closure rule; tanpa ini $attribute tak
+                        // ter-resolve dan import gagal.
                         ->rules([
-                            function (string $attribute, $value, \Closure $fail): void {
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail): void {
                                 $files = is_array($value) ? $value : [$value];
                                 foreach ($files as $file) {
                                     if (! $file instanceof \Illuminate\Http\UploadedFile) {
