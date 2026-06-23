@@ -34,26 +34,22 @@ class OrderImporter
             'tiktok_income' => 'Laporan Penghasilan Tokopedia/TikTok', 'csv' => 'Pesanan Selesai Tokopedia/TikTok',
             'catalog' => 'Master Produk / Katalog', 'dropship_report' => 'Laporan Dropship', 'generic_xlsx' => 'File pesanan',
         ];
-        $report = []; $orderSources = []; $orderFiles = []; $dropshipMap = []; $hasDropshipReport = false;
+        $report = []; $orderSources = []; $orderFiles = [];
 
         foreach ($files as $f) {
             $name = $f['name']; $res = mp_read_file($f['path'], $name);
             $label = $srcLabel[$res['source'] ?? ''] ?? 'File';
-            // File DAFTAR PRODUK (katalog) → diimpor lewat tombol "Impor Daftar Produk" (bisa pilih supplier).
+            // File DAFTAR PRODUK (katalog) → menu "Impor Daftar Produk".
             if (($res['type'] ?? '') === 'catalog') {
-                $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Ini file DAFTAR PRODUK (katalog), bukan laporan penjualan. Pakai tombol "Impor Daftar Produk" agar bisa memilih supplier (stok sendiri / dropship).'];
+                $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Ini file DAFTAR PRODUK (katalog), bukan laporan marketplace. Gunakan menu "Impor Daftar Produk".'];
                 continue;
             }
-            // Tidak berjualan dropship → laporan dropship dilewati.
-            if (! $this->usesDropship && ($res['type'] ?? '') === 'dropship_report') {
-                $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Laporan dropship dilewati — Anda tidak berjualan dropship (atur di menu Pengaturan).'];
+            // Laporan Dropship → menu "Impor Dropship" (terpisah dari laporan marketplace).
+            if (($res['type'] ?? '') === 'dropship_report') {
+                $report[] = ['name' => $name, 'ok' => false, 'reason' => 'Ini Laporan Dropship. Gunakan menu "Impor Dropship" agar biaya dropship terisi per pesanan.'];
                 continue;
             }
-            if ($res['type'] === 'dropship_report') {
-                $hasDropshipReport = true;
-                foreach ($res['dropship'] as $no => $info) $dropshipMap[$no] = $info;
-                $report[] = ['name' => $name, 'ok' => true, 'type' => $label, 'detail' => count($res['dropship']) . ' pesanan dropship'];
-            } elseif ($res['type'] === 'orders' && !empty($res['orders'])) {
+            if ($res['type'] === 'orders' && !empty($res['orders'])) {
                 $orderSources[] = $res['orders'];
                 $orderFiles[] = ['name' => $name, 'mk' => $res['marketplace'] ?? null, 'ridx' => count($report)];
                 $report[] = ['name' => $name, 'ok' => true, 'type' => $label, 'detail' => count($res['orders']) . ' pesanan terbaca'];
@@ -78,12 +74,8 @@ class OrderImporter
         $summary = [];
         if ($orderSources) {
             $orders = mp_merge_orders($orderSources);
-            $summary['orders'] = $this->importOrders($orders, $storeId, $storeMarketplace, $dropshipMap, $hasDropshipReport, 'SELF');
+            $summary['orders'] = $this->importOrders($orders, $storeId, $storeMarketplace, [], false, 'SELF');
             $this->backfillHpp(); // isi HPP yang masih kosong untuk pesanan packing-sendiri dari katalog
-        }
-        if ($hasDropshipReport) {
-            $bf = $this->backfillDropship($dropshipMap);
-            $summary['dropship'] = "Laporan dropship: " . count($dropshipMap) . " pesanan dropship; $bf pesanan lama diperbarui.";
         }
 
         return ['report' => $report, 'summary' => $summary];
@@ -196,13 +188,16 @@ class OrderImporter
      */
     public function importDropshipFile(string $path, string $name): array
     {
-        $map = mp_generic_dropship($path, $name);
+        $probe = mp_read_file($path, $name);
+        if (($probe['type'] ?? '') === 'catalog') {
+            return ['ok' => false, 'reason' => 'File ini DAFTAR PRODUK, bukan data dropship. Gunakan menu "Impor Daftar Produk".'];
+        }
+        // Laporan dropship dari penyedia (format resmi) ATAU file isian manual dari template.
+        $map = (($probe['type'] ?? '') === 'dropship_report' && ! empty($probe['dropship']))
+            ? $probe['dropship']
+            : mp_generic_dropship($path, $name);
         if (! $map) {
-            $t = mp_read_file($path, $name)['type'] ?? '';
-            if ($t === 'catalog') {
-                return ['ok' => false, 'reason' => 'File ini DAFTAR PRODUK, bukan daftar biaya dropship. Gunakan tombol "Impor Daftar Produk".'];
-            }
-            return ['ok' => false, 'reason' => 'Tidak ada data terbaca. Pastikan file punya kolom No. Pesanan dan Biaya Dropship.'];
+            return ['ok' => false, 'reason' => 'Tidak ada data terbaca. Pastikan file punya kolom No. Pesanan dan Biaya Dropship (atau pakai "Unduh Format File").'];
         }
         $invoices = array_map('strval', array_keys($map));
         $matched = DB::table('orders')->where('organization_id', $this->orgId)
