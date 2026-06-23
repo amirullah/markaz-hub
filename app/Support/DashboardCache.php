@@ -14,8 +14,8 @@ class DashboardCache
     /** Umur cache (detik). Pendek; lagipula dibatalkan saat impor/estimasi. */
     public const TTL = 600;
 
-    /** Semua sub-kunci dashboard (untuk pembatalan menyeluruh). */
-    private const KEYS = ['stats', 'laba_bulan', 'channel', 'laba_channel', 'top_produk'];
+    /** Semua sub-kunci dashboard + kartu total Pesanan (untuk pembatalan menyeluruh saat impor). */
+    private const KEYS = ['stats', 'laba_bulan', 'channel', 'laba_channel', 'top_produk', 'orders_subheading'];
 
     /** Ambil dari cache (per org pengguna login) atau hitung lalu simpan. */
     public static function remember(string $key, \Closure $callback): mixed

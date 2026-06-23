@@ -24,11 +24,24 @@ class ListOrders extends ListRecords
             return null;
         }
 
-        $count = (clone $query)->count();
-        $omzet = (float) (clone $query)->sum('product_revenue');
-        $laba = (float) (clone $query)->sum(DB::raw(ProfitService::sqlProfit()));
-        $batal = (clone $query)->where('status', 'CANCELLED')->count();
-        $belumFinal = (clone $query)->labaBelumFinal()->count();
+        // Hitung 5 angka kartu total. Tampilan DEFAULT (tanpa filter) → di-cache per org
+        // (spt dashboard, disegarkan saat impor). Saat ada filter → hitung live agar akurat.
+        $compute = fn (): array => [
+            'count' => (clone $query)->count(),
+            'omzet' => (float) (clone $query)->sum('product_revenue'),
+            'laba' => (float) (clone $query)->sum(DB::raw(ProfitService::sqlProfit())),
+            'batal' => (clone $query)->where('status', 'CANCELLED')->count(),
+            'belumFinal' => (clone $query)->labaBelumFinal()->count(),
+        ];
+        $d = $this->hasActiveTableFilters()
+            ? $compute()
+            : \App\Support\DashboardCache::remember('orders_subheading', $compute);
+
+        $count = $d['count'];
+        $omzet = $d['omzet'];
+        $laba = $d['laba'];
+        $batal = $d['batal'];
+        $belumFinal = $d['belumFinal'];
         $rp = fn ($v): string => 'Rp ' . number_format((float) $v, 0, ',', '.');
         $n = fn ($v): string => number_format((int) $v, 0, ',', '.');
 
@@ -49,6 +62,27 @@ class ListOrders extends ListRecords
             . '</div>';
 
         return new HtmlString($html);
+    }
+
+    /** Ada filter tabel yang sedang aktif (punya nilai)? Dipakai utk memutuskan cache kartu total. */
+    private function hasActiveTableFilters(): bool
+    {
+        $flatten = function ($arr) use (&$flatten): array {
+            $out = [];
+            foreach ((array) $arr as $v) {
+                is_array($v) ? $out = array_merge($out, $flatten($v)) : $out[] = $v;
+            }
+
+            return $out;
+        };
+
+        foreach ($flatten($this->tableFilters ?? []) as $v) {
+            if ($v !== null && $v !== '' && $v !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // Pesanan masuk lewat Import (tanpa tombol "Buat"). Aksi: isi estimasi biaya admin.
