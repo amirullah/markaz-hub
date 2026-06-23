@@ -10,6 +10,8 @@ class LabaChannelChart extends ChartWidget
 {
     protected static ?int $sort = 0;
 
+    protected static bool $isLazy = false;
+
     protected ?string $maxHeight = '260px';
 
     public function getHeading(): ?string

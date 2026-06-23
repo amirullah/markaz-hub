@@ -12,6 +12,9 @@ class StatsOverview extends StatsOverviewWidget
 {
     protected static ?int $sort = -3;
 
+    // Tampil bersama halaman (bukan lazy/pop-in bertahap) — datanya sudah di-cache jadi cepat.
+    protected static bool $isLazy = false;
+
     protected function getStats(): array
     {
         // Angka di-cache per org (TTL pendek, dibatalkan saat impor/estimasi) — hemat query berat.

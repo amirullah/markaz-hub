@@ -10,6 +10,8 @@ class LabaPerBulanChart extends ChartWidget
 {
     protected static ?int $sort = -2;
 
+    protected static bool $isLazy = false;
+
     protected int|string|array $columnSpan = 'full';
 
     protected ?string $maxHeight = '280px';

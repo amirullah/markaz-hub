@@ -9,6 +9,8 @@ class TopProdukChart extends ChartWidget
 {
     protected static ?int $sort = 1;
 
+    protected static bool $isLazy = false;
+
     protected ?string $maxHeight = '260px';
 
     public function getHeading(): ?string
