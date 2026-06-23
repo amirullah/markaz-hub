@@ -14,6 +14,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\HtmlString;
 
 class ImportData extends Page
 {
@@ -93,7 +94,7 @@ class ImportData extends Page
         return Action::make('catalog')
             ->label('Impor Daftar Produk')
             ->icon(Heroicon::OutlinedRectangleStack)
-            ->color('gray')
+            ->color('primary')
             ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
             ->modalHeading('Impor daftar produk (katalog)')
             ->modalSubmitActionLabel('Impor daftar produk')
@@ -122,7 +123,7 @@ class ImportData extends Page
         return Action::make('dropship')
             ->label('Impor Dropship')
             ->icon(Heroicon::OutlinedTruck)
-            ->color('warning')
+            ->color('primary')
             ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
             ->modalHeading('Impor biaya dropship (per pesanan)')
             ->modalSubmitActionLabel('Impor dropship')
@@ -143,7 +144,7 @@ class ImportData extends Page
         return Action::make('downloadTemplate')
             ->label('Unduh Format File')
             ->icon(Heroicon::OutlinedArrowDownTray)
-            ->color('gray')
+            ->color('primary')
             ->link()
             ->action(fn () => $this->xlsxTemplate(
                 'format-biaya-dropship.xlsx',
@@ -159,7 +160,7 @@ class ImportData extends Page
         return Action::make('downloadCatalogTemplate')
             ->label('Unduh Format File')
             ->icon(Heroicon::OutlinedArrowDownTray)
-            ->color('gray')
+            ->color('primary')
             ->link()
             ->action(fn () => $this->xlsxTemplate(
                 'format-daftar-produk.xlsx',
@@ -198,14 +199,38 @@ class ImportData extends Page
 
         $ok = collect($this->report)->where('ok', true)->count();
         $fail = collect($this->report)->where('ok', false)->count();
-        $body = implode(' ', array_filter([$result['summary']['orders'] ?? null]));
-        $body = $body !== '' ? $body : 'Cek detail per file di bawah.';
+        $orders = $result['summary']['orders'] ?? null; // "Pesanan: X baru, Y diperbarui, Z tetap."
+        $skips = collect($this->report)->where('ok', false)
+            ->map(fn ($r) => $r['name'] . ' — ' . ($r['reason'] ?? ''))->values()->all();
+
+        $lines = [];
+        if ($ok > 0) {
+            $lines[] = '✅ ' . ($orders ?: "{$ok} file diproses.");
+        } elseif ($fail > 0) {
+            $lines[] = '❌ Tidak ada laporan pesanan yang diproses. File yang diunggah sepertinya bukan laporan marketplace.';
+        }
+        if ($skips) {
+            $lines[] = '⏭️ ' . count($skips) . ' file dilewati:';
+            foreach (array_slice($skips, 0, 4) as $s) {
+                $lines[] = '• ' . $s;
+            }
+            if (count($skips) > 4) {
+                $lines[] = '… dan ' . (count($skips) - 4) . ' lainnya (lihat detail per file di halaman).';
+            }
+        }
+
+        $title = match (true) {
+            $ok > 0 && $fail === 0 => "Berhasil — {$ok} file diproses",
+            $ok > 0 && $fail > 0 => "Sebagian berhasil — {$ok} diproses, {$fail} dilewati",
+            default => "Gagal — {$fail} file dilewati",
+        };
+        $type = $ok > 0 ? ($fail ? 'warning' : 'success') : 'danger';
 
         $notif = Notification::make()
-            ->title($fail ? "Selesai: {$ok} file diproses, {$fail} dilewati" : "Berhasil: {$ok} file diproses")
-            ->body($body)
+            ->title($title)
+            ->body(new HtmlString(implode('<br>', array_map('e', $lines))))
             ->icon('heroicon-o-arrow-down-tray')
-            ->{$fail ? 'warning' : 'success'}();
+            ->{$type}();
         $notif->send();
         $notif->sendToDatabase(auth()->user());
     }
@@ -227,15 +252,28 @@ class ImportData extends Page
         );
 
         if (! ($res['ok'] ?? false)) {
-            Notification::make()->title('Impor daftar produk gagal')->body($res['reason'] ?? '')->danger()->send();
+            Notification::make()
+                ->title('Impor daftar produk gagal')
+                ->body(new HtmlString('Penyebab: ' . e($res['reason'] ?? 'Format file tidak dikenali.')))
+                ->danger()
+                ->send();
             return;
         }
 
+        $lines = ["✅ {$res['ins']} produk baru, {$res['upd']} diperbarui.", "Supplier: {$res['supplier']}."];
+        if ($res['changes']) {
+            $lines[] = "{$res['changes']} produk berubah harga modal.";
+        }
+        if ($res['skipped']) {
+            $lines[] = "{$res['skipped']} produk dilewati — tanggal di file lebih lama dari data tersimpan (harga baru tidak ditimpa).";
+        }
+        if (($res['ins'] ?? 0) === 0 && ($res['upd'] ?? 0) === 0 && ! $res['skipped']) {
+            $lines[] = 'Catatan: tidak ada produk yang masuk. Pastikan file punya kolom Kode Produk (SKU) & Harga Modal.';
+        }
+
         Notification::make()
-            ->title("Daftar produk diimpor: {$res['ins']} produk baru, {$res['upd']} diperbarui")
-            ->body("Supplier: {$res['supplier']}"
-                . ($res['changes'] ? " · {$res['changes']} harga berubah" : '')
-                . ($res['skipped'] ? " · {$res['skipped']} dilewati (tanggal di file lebih lama)" : ''))
+            ->title('Daftar produk berhasil diimpor')
+            ->body(new HtmlString(implode('<br>', array_map('e', $lines))))
             ->success()
             ->send();
     }
@@ -252,15 +290,29 @@ class ImportData extends Page
             ->importDropshipFile($file->getRealPath(), $file->getClientOriginalName());
 
         if (! ($res['ok'] ?? false)) {
-            Notification::make()->title('Impor dropship gagal')->body($res['reason'] ?? '')->danger()->send();
+            Notification::make()
+                ->title('Impor dropship gagal')
+                ->body(new HtmlString('Penyebab: ' . e($res['reason'] ?? 'Format file tidak dikenali.')))
+                ->danger()
+                ->send();
             return;
         }
 
+        $lines = [
+            "✅ {$res['updated']} pesanan ditandai dropship & biayanya terisi.",
+            "{$res['rows']} baris dibaca, {$res['matched']} cocok dengan pesanan di sistem.",
+        ];
+        if ($res['notfound']) {
+            $lines[] = "{$res['notfound']} No. Pesanan tidak ditemukan — pastikan pesanannya sudah diimpor lewat \"Laporan Marketplace\" lebih dulu.";
+        }
+        if (($res['updated'] ?? 0) === 0 && ($res['matched'] ?? 0) > 0) {
+            $lines[] = 'Semua pesanan yang cocok sudah sesuai (tidak ada perubahan).';
+        }
+
         Notification::make()
-            ->title("Dropship diimpor: {$res['updated']} pesanan diperbarui")
-            ->body("{$res['rows']} baris dibaca · {$res['matched']} pesanan cocok"
-                . ($res['notfound'] ? " · {$res['notfound']} No. Pesanan tidak ditemukan" : ''))
-            ->success()
+            ->title('Biaya dropship berhasil diimpor')
+            ->body(new HtmlString(implode('<br>', array_map('e', $lines))))
+            ->{($res['notfound'] ?? 0) > 0 ? 'warning' : 'success'}()
             ->send();
     }
 }

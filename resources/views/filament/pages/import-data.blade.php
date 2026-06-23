@@ -44,9 +44,9 @@
                         <li>Isinya cukup: <strong>Kode Produk (SKU)</strong> &amp; <strong>Harga Modal</strong> (opsional: Nama Produk, Tanggal).</li>
                         <li>Belum punya filenya? Klik <em>"Unduh Format File"</em>, isi, lalu unggah.</li>
                     </ul>
-                    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.85rem">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-top:.85rem">
                         <div style="{{ $btnWrap }}">{{ $this->catalogAction }}</div>
-                        <div>{{ $this->downloadCatalogTemplateAction }}</div>
+                        {{ $this->downloadCatalogTemplateAction }}
                     </div>
                 </div>
             </div>
@@ -64,9 +64,9 @@
                             <li><strong>Punya file laporan dari penyedia dropship?</strong> Langsung unggah di sini.</li>
                             <li><strong>Tidak punya laporan?</strong> Klik <em>"Unduh Format File"</em>, isi <strong>No. Pesanan</strong> &amp; <strong>Biaya Dropship</strong>, lalu unggah.</li>
                         </ul>
-                        <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.85rem">
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-top:.85rem">
                             <div style="{{ $btnWrap }}">{{ $this->dropshipAction }}</div>
-                            <div>{{ $this->downloadTemplateAction }}</div>
+                            {{ $this->downloadTemplateAction }}
                         </div>
                     </div>
                 </div>
