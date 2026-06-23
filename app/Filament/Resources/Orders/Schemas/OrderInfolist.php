@@ -18,8 +18,8 @@ class OrderInfolist
         $rp = self::rp();
 
         return $schema->components([
-            Section::make('⚠️ Data Belum Lengkap')
-                ->description('Hal-hal berikut belum lengkap pada pesanan ini')
+            Section::make('⚠️ Laba Belum Pasti')
+                ->description('Hal berikut membuat laba pesanan ini belum akurat')
                 ->visible(fn ($record): bool => $record !== null && ! empty($record->incompleteness()))
                 ->schema([
                     TextEntry::make('kelengkapan')
@@ -28,6 +28,15 @@ class OrderInfolist
                         ->listWithLineBreaks()
                         ->bulleted()
                         ->color('warning'),
+                ]),
+
+            Section::make('ℹ️ Catatan')
+                ->visible(fn ($record): bool => $record !== null && $record->lacksItemDetail())
+                ->schema([
+                    TextEntry::make('item_note')
+                        ->hiddenLabel()
+                        ->state('Rincian item produk belum tercatat. Ini TIDAK memengaruhi laba — untuk dropship laba dihitung dari biaya dropship, dan untuk packing sendiri dari HPP. Impor File/Laporan Pesanan bila ingin melihat rincian produknya.')
+                        ->color('gray'),
                 ]),
 
             Section::make('Informasi Pesanan')

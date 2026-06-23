@@ -59,9 +59,10 @@ class Order extends Model
     }
 
     /**
-     * Daftar hal yang BELUM lengkap pada pesanan (untuk indikator/keterangan).
-     * Kosong = lengkap. Pesanan batal dianggap lengkap (tak perlu data). Memakai relasi
-     * items — eager-load di tabel agar tak N+1.
+     * Hal yang membuat LABA belum akurat/pasti (untuk Status Laba). Kosong = laba bisa
+     * dihitung pasti. Pesanan batal dianggap lengkap. CATATAN: "tidak ada rincian item"
+     * TIDAK termasuk di sini — untuk dropship laba dihitung dari biaya dropship (tak perlu
+     * item), dan untuk packing-sendiri konsekuensinya sudah muncul sebagai "HPP belum ada".
      */
     public function incompleteness(): array
     {
@@ -69,10 +70,6 @@ class Order extends Model
             return [];
         }
         $gaps = [];
-
-        if ($this->items->count() === 0) {
-            $gaps[] = 'Belum ada rincian item produk (impor File/Laporan Pesanan)';
-        }
 
         if (! $this->income_verified) {
             $gaps[] = 'Biaya masih ESTIMASI — Laporan Penghasilan belum diimpor';
@@ -87,6 +84,12 @@ class Order extends Model
         }
 
         return $gaps;
+    }
+
+    /** Rincian item produk belum tercatat (catatan, BUKAN penentu laba). */
+    public function lacksItemDetail(): bool
+    {
+        return $this->status !== 'CANCELLED' && $this->items->count() === 0;
     }
 
     /** Laba bersih (pakai sumber kebenaran tunggal ProfitService). */
