@@ -2,6 +2,8 @@
     @php
         $card = 'border:1px solid #e5e7eb;border-radius:.85rem;padding:1.1rem 1.2rem;background:#fff';
         $ul = 'margin:.35rem 0 0 1.1rem;padding:0;font-size:.8rem;color:#64748b;line-height:1.6';
+        $fileEx = 'font-family:monospace;font-size:.72rem;background:#f1f5f9;border-radius:.3rem;padding:.05rem .35rem;color:#334155';
+        $btnWrap = 'max-width:16rem';
         $dropship = \App\Models\Organization::currentUsesDropship();
     @endphp
 
@@ -19,7 +21,13 @@
                         <li><strong>Laporan Penghasilan</strong> — biaya admin &amp; laba final yang akurat.</li>
                         <li><strong>Laporan / File Pesanan</strong> — daftar pesanan, produk, jumlah, status.</li>
                     </ul>
-                    <div style="margin-top:.8rem">{{ $this->importAction }}</div>
+                    <div style="margin-top:.6rem;font-size:.78rem;color:#64748b;line-height:1.9">
+                        Contoh nama file (dari hasil download):<br>
+                        <strong>Shopee</strong> — <span style="{{ $fileEx }}">Income....xlsx</span> &nbsp; <span style="{{ $fileEx }}">Order.all....xlsx</span><br>
+                        <strong>Tokopedia/TikTok</strong> — <span style="{{ $fileEx }}">income_....xlsx</span> &nbsp; <span style="{{ $fileEx }}">Semua pesanan-....csv</span>
+                        <div style="color:#94a3b8;margin-top:.15rem">Nama boleh berbeda — yang penting file hasil download laporan dari marketplace.</div>
+                    </div>
+                    <div style="{{ $btnWrap }};margin-top:.85rem">{{ $this->importAction }}</div>
                 </div>
             </div>
         </div>
@@ -32,10 +40,14 @@
                     <div style="font-weight:700;color:#1e293b;font-size:1.02rem">Daftar Produk</div>
                     <div style="font-size:.85rem;color:#475569;margin:.25rem 0">Daftar produk Anda + <strong>harga modal</strong> (untuk menghitung laba). Bukan file dari marketplace.</div>
                     <ul style="{{ $ul }}">
-                        <li>File Excel/CSV berisi <strong>Kode Produk (SKU)</strong> &amp; <strong>Harga Modal</strong> (opsional: Nama Produk, Tanggal).</li>
-                        <li>Isi asal produk — mis. <em>"Stok Sendiri"</em> atau <em>"Supplier A"</em>.</li>
+                        <li>Bisa dari <strong>file download tempat lain</strong> (supplier, marketplace lain, atau sistem/aplikasi Anda) — atau Anda buat sendiri.</li>
+                        <li>Isinya cukup: <strong>Kode Produk (SKU)</strong> &amp; <strong>Harga Modal</strong> (opsional: Nama Produk, Tanggal).</li>
+                        <li>Belum punya filenya? Klik <em>"Unduh Format File"</em>, isi, lalu unggah.</li>
                     </ul>
-                    <div style="margin-top:.8rem">{{ $this->catalogAction }}</div>
+                    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.85rem">
+                        <div style="{{ $btnWrap }}">{{ $this->catalogAction }}</div>
+                        <div>{{ $this->downloadCatalogTemplateAction }}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -52,9 +64,9 @@
                             <li><strong>Punya file laporan dari penyedia dropship?</strong> Langsung unggah di sini.</li>
                             <li><strong>Tidak punya laporan?</strong> Klik <em>"Unduh Format File"</em>, isi <strong>No. Pesanan</strong> &amp; <strong>Biaya Dropship</strong>, lalu unggah.</li>
                         </ul>
-                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-top:.8rem">
-                            {{ $this->dropshipAction }}
-                            {{ $this->downloadTemplateAction }}
+                        <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.85rem">
+                            <div style="{{ $btnWrap }}">{{ $this->dropshipAction }}</div>
+                            <div>{{ $this->downloadTemplateAction }}</div>
                         </div>
                     </div>
                 </div>

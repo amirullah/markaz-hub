@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Store;
 use App\Services\Import\OrderImporter;
+use App\Support\SimpleXlsx;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -13,7 +14,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ImportData extends Page
 {
@@ -58,6 +58,7 @@ class ImportData extends Page
             ->label('Impor Laporan Marketplace')
             ->icon(Heroicon::OutlinedArrowUpTray)
             ->color('primary')
+            ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
             ->modalHeading('Impor laporan marketplace')
             ->modalSubmitActionLabel('Impor sekarang')
             ->schema([
@@ -93,6 +94,7 @@ class ImportData extends Page
             ->label('Impor Daftar Produk')
             ->icon(Heroicon::OutlinedRectangleStack)
             ->color('gray')
+            ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
             ->modalHeading('Impor daftar produk (katalog)')
             ->modalSubmitActionLabel('Impor daftar produk')
             ->schema([
@@ -121,6 +123,7 @@ class ImportData extends Page
             ->label('Impor Dropship')
             ->icon(Heroicon::OutlinedTruck)
             ->color('warning')
+            ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
             ->modalHeading('Impor biaya dropship (per pesanan)')
             ->modalSubmitActionLabel('Impor dropship')
             ->schema([
@@ -134,7 +137,7 @@ class ImportData extends Page
             ->action(fn (array $data) => $this->runDropshipImport($data));
     }
 
-    /** Unduh template/format file dropship manual (CSV). */
+    /** Unduh template/format file dropship manual (Excel .xlsx, kolom No. Pesanan = TEKS). */
     public function downloadTemplateAction(): Action
     {
         return Action::make('downloadTemplate')
@@ -142,13 +145,39 @@ class ImportData extends Page
             ->icon(Heroicon::OutlinedArrowDownTray)
             ->color('gray')
             ->link()
-            ->action(function (): StreamedResponse {
-                $csv = "No. Pesanan,Biaya Dropship,Modal Produk\r\n"
-                    . "GANTI-DENGAN-NO-PESANAN,50000,45000\r\n";
-                return response()->streamDownload(function () use ($csv) {
-                    echo "\xEF\xBB\xBF" . $csv; // BOM agar Excel rapi
-                }, 'format-biaya-dropship.csv', ['Content-Type' => 'text/csv']);
-            });
+            ->action(fn () => $this->xlsxTemplate(
+                'format-biaya-dropship.xlsx',
+                ['No. Pesanan', 'Biaya Dropship', 'Modal Produk'],
+                [['CONTOH-HAPUS-BARIS-INI', 50000, 45000]],
+                [1], // No. Pesanan dipaksa TEKS (angka panjang tak rusak di Excel)
+            ));
+    }
+
+    /** Unduh template/format daftar produk (Excel .xlsx, kolom Kode Produk = TEKS). */
+    public function downloadCatalogTemplateAction(): Action
+    {
+        return Action::make('downloadCatalogTemplate')
+            ->label('Unduh Format File')
+            ->icon(Heroicon::OutlinedArrowDownTray)
+            ->color('gray')
+            ->link()
+            ->action(fn () => $this->xlsxTemplate(
+                'format-daftar-produk.xlsx',
+                ['Kode Produk', 'Nama Produk', 'Harga Modal', 'Tanggal'],
+                [['CONTOH-HAPUS-BARIS-INI', 'Nama Produk Contoh', 25000, '2026-06-23']],
+                [1], // Kode Produk dipaksa TEKS
+            ));
+    }
+
+    /** Bangun file .xlsx template sementara lalu kirim sebagai unduhan. */
+    private function xlsxTemplate(string $filename, array $headers, array $rows, array $textCols)
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'mkztpl') . '.xlsx';
+        SimpleXlsx::write($tmp, $headers, $rows, $textCols);
+
+        return response()->download($tmp, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     protected function runImport(array $data): void

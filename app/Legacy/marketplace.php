@@ -395,6 +395,7 @@ function mp_generic_dropship(string $path, string $name): array
     foreach ($assoc as $r) {
         $inv = mp_pick($r, ['no. pesanan', 'no pesanan', 'nomor pesanan', 'kode invoice channel', 'order id', 'order sn', 'invoice', 'kode pesanan']);
         if (!$inv) continue;
+        if (stripos($inv, 'HAPUS-BARIS') !== false) continue; // baris contoh dari template Unduh Format
         $total = mp_num(mp_pick($r, ['biaya dropship', 'total dropship', 'total transaksi', 'total biaya', 'total', 'biaya']));
         $modal = mp_num(mp_pick($r, ['modal produk', 'total harga produk', 'harga produk', 'modal', 'hpp']));
         if ($total <= 0 && $modal <= 0) continue;

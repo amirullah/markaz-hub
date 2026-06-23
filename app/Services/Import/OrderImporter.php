@@ -106,6 +106,7 @@ class OrderImporter
         foreach ($products as $p) {
             $sku = $p['sku'] ?? '';
             if ($sku === '') continue;
+            if (stripos($sku, 'HAPUS-BARIS') !== false) continue; // baris contoh dari template Unduh Format
             $new = (float) $p['cost'];
             $changedAt = mp_flex_date($p['changedAt'] ?? null); // tgl "Perubahan Terakhir" dari master
             $exists = array_key_exists($sku, $oldCost);
