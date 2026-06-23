@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MarkazHub — Kelola Laba Marketplace dengan Mudah</title>
-    <meta name="description" content="MarkazHub membantu seller Shopee, Tokopedia/TikTok, dan dropship menghitung laba akurat, menemukan produk merugi, dan mengelola pesanan dalam satu aplikasi.">
+    <meta name="description" content="MarkazHub membantu seller Shopee & Tokopedia/TikTok — baik yang packing sendiri, dropship, maupun campuran keduanya — menghitung laba bersih akurat, menemukan produk merugi, dan mengelola pesanan dalam satu aplikasi.">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;background:#fff;line-height:1.6}
@@ -68,9 +68,9 @@
 
     <header class="hero">
         <div class="wrap">
-            <span class="pill">📊 Untuk seller Shopee · Tokopedia/TikTok · Dropship</span>
+            <span class="pill">📊 Shopee &amp; Tokopedia/TikTok — packing sendiri, dropship, atau keduanya</span>
             <h1>Tahu laba aslimu, di setiap pesanan.</h1>
-            <p>MarkazHub menggabungkan laporan marketplace-mu, menghitung laba bersih yang akurat, dan menunjukkan produk mana yang sebenarnya merugi — semua dalam satu aplikasi.</p>
+            <p>Mau <strong>stok &amp; packing sendiri</strong>, <strong>dropship</strong> (tanpa stok), atau <strong>campuran keduanya</strong> — MarkazHub menggabungkan laporan marketplace-mu dan menghitung laba bersih yang akurat per pesanan, lengkap dengan produk mana yang sebenarnya merugi.</p>
             <div class="cta">
                 <a href="/admin/login" class="btn">Mulai Gratis dengan Google →</a>
                 <a href="#fitur" class="btn btn-ghost">Lihat Fitur</a>
@@ -89,6 +89,7 @@
             <h2>Semua yang dibutuhkan untuk untung lebih jelas</h2>
             <p class="sub">Berhenti menebak. MarkazHub mengubah tumpukan laporan jadi keputusan yang menguntungkan.</p>
             <div class="grid">
+                <div class="card"><div class="ic">🔀</div><h3>Packing sendiri, dropship, atau campuran</h3><p>Jualan stok sendiri (packing sendiri), dropship tanpa stok, atau sebagian-sebagian — modal tiap pesanan dihitung otomatis sesuai caranya. Satu aplikasi untuk semua model jualan.</p></div>
                 <div class="card"><div class="ic">📥</div><h3>Impor laporan otomatis</h3><p>Unggah file ekspor Shopee & Tokopedia/TikTok — sistem membaca, mencocokkan, dan merapikan sendiri.</p></div>
                 <div class="card"><div class="ic">💰</div><h3>Laba bersih akurat</h3><p>Perhitungan laba teraudit: omzet dikurangi modal, biaya admin, ongkir, voucher, dan biaya lain.</p></div>
                 <div class="card"><div class="ic">📉</div><h3>Deteksi produk merugi</h3><p>Lihat produk yang dijual di bawah modal dan pesanan yang rugi — sebelum makin dalam.</p></div>
