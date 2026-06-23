@@ -18,6 +18,18 @@ class OrderInfolist
         $rp = self::rp();
 
         return $schema->components([
+            Section::make('⚠️ Data Belum Lengkap')
+                ->description('Hal-hal berikut belum lengkap pada pesanan ini')
+                ->visible(fn ($record): bool => $record !== null && ! empty($record->incompleteness()))
+                ->schema([
+                    TextEntry::make('kelengkapan')
+                        ->hiddenLabel()
+                        ->state(fn ($record): array => $record->incompleteness())
+                        ->listWithLineBreaks()
+                        ->bulleted()
+                        ->color('warning'),
+                ]),
+
             Section::make('Informasi Pesanan')
                 ->columns(4)
                 ->schema([

@@ -95,8 +95,26 @@ class OrdersTable
                     ->tooltip(fn ($state): string => $state
                         ? 'Angka final (Laporan Penghasilan marketplace sudah masuk).'
                         : 'Masih estimasi (belum ada Laporan Penghasilan).'),
+                TextColumn::make('kelengkapan')
+                    ->label('Kelengkapan')
+                    ->badge()
+                    ->state(fn (\App\Models\Order $record): string => ($g = $record->incompleteness())
+                        ? count($g) . ' perlu data'
+                        : 'Lengkap')
+                    ->color(fn (string $state): string => $state === 'Lengkap' ? 'success' : 'warning')
+                    ->icon(fn (string $state): string => $state === 'Lengkap' ? 'heroicon-m-check-circle' : 'heroicon-m-exclamation-triangle')
+                    ->tooltip(fn (\App\Models\Order $record): string => ($g = $record->incompleteness())
+                        ? 'Belum lengkap: ' . implode(' · ', $g)
+                        : 'Data pesanan lengkap')
+                    ->toggleable(),
             ])
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('items:id,order_id,product_id'))
             ->filters([
+                SelectFilter::make('store_id')
+                    ->label('Toko')
+                    ->relationship('store', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options([
@@ -163,10 +181,15 @@ class OrdersTable
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when($data['from'] ?? null, fn (Builder $query, $d): Builder => $query->whereDate('order_date', '>=', $d))
                         ->when($data['until'] ?? null, fn (Builder $query, $d): Builder => $query->whereDate('order_date', '<=', $d))),
+                Filter::make('tanpa_item')
+                    ->label('Belum ada item produk')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->whereDoesntHave('items')),
                 TrashedFilter::make()->label('Terhapus'),
             ])
-            ->filtersLayout(FiltersLayout::AboveContentCollapsible)
-            ->filtersFormColumns(4)
+            ->filtersLayout(FiltersLayout::Dropdown)
+            ->filtersFormColumns(2)
+            ->filtersTriggerAction(fn ($action) => $action->label('Filter')->icon('heroicon-m-funnel'))
             ->deferFilters(false)
             ->recordActions([
                 ViewAction::make(),

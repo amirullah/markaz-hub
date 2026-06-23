@@ -44,7 +44,7 @@ class Pengaturan extends Page
                 ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
                 ->requiresConfirmation()
                 ->modalHeading('Kalibrasi tarif biaya dari Laporan Penghasilan')
-                ->modalDescription('Menghitung tarif biaya EFEKTIF dari pesanan Anda yang SUDAH punya Laporan Penghasilan (biaya asli), lalu memakainya untuk mengestimasi pesanan yang belum ada laporannya. Ini PALING AKURAT karena memakai data toko Anda sendiri (tarif per kategori = komisi + biaya layanan + komisi dinamis, sudah jadi satu). Butuh cukup banyak pesanan ber-Laporan Penghasilan.')
+                ->modalDescription('Menghitung tarif biaya EFEKTIF dari pesanan Anda yang SUDAH punya Laporan Penghasilan (biaya asli), lalu memakainya untuk mengestimasi pesanan yang belum ada laporannya. Diutamakan data ~6 bulan terakhir agar mengikuti tarif terkini (data lama hanya dipakai bila data baru belum cukup). Ini PALING AKURAT karena memakai data toko Anda sendiri (tarif per kategori = komisi + biaya layanan + komisi dinamis, sudah jadi satu).')
                 ->modalSubmitActionLabel('Kalibrasi sekarang')
                 ->action(function (): void {
                     $res = app(AdminFeeEstimator::class)->calibrateFromIncome((int) auth()->user()->organization_id);

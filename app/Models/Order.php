@@ -58,6 +58,37 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * Daftar hal yang BELUM lengkap pada pesanan (untuk indikator/keterangan).
+     * Kosong = lengkap. Pesanan batal dianggap lengkap (tak perlu data). Memakai relasi
+     * items — eager-load di tabel agar tak N+1.
+     */
+    public function incompleteness(): array
+    {
+        if ($this->status === 'CANCELLED') {
+            return [];
+        }
+        $gaps = [];
+
+        if ($this->items->count() === 0) {
+            $gaps[] = 'Belum ada rincian item produk (impor File/Laporan Pesanan)';
+        }
+
+        if (! $this->income_verified) {
+            $gaps[] = 'Biaya masih ESTIMASI — Laporan Penghasilan belum diimpor';
+        }
+
+        if ($this->fulfillment === 'SELF' && (float) $this->product_revenue > 0 && (float) $this->cogs <= 0) {
+            $gaps[] = 'HPP/modal belum ada — produk belum dikenal/diimpor (Daftar Produk)';
+        }
+
+        if ($this->fulfillment === 'DROPSHIP' && (float) $this->dropship_cost <= 0) {
+            $gaps[] = 'Biaya dropship belum ada (impor Dropship)';
+        }
+
+        return $gaps;
+    }
+
     /** Laba bersih (pakai sumber kebenaran tunggal ProfitService). */
     public function getProfitAttribute(): float
     {

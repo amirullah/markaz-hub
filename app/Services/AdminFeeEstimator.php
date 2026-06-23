@@ -31,6 +31,9 @@ class AdminFeeEstimator
     /** Tarif komisi cadangan bila org belum punya kategori sama sekali (%). */
     public const DEFAULT_COMMISSION_PCT = 8.0;
 
+    /** Kalibrasi UTAMAKAN data N bulan terakhir (biaya lama bisa beda); fallback semua data bila kurang. */
+    public const CALIBRATION_RECENT_MONTHS = 6;
+
     /** Estimasi biaya marketplace satu pesanan (Rp). $fees = setelan biaya org (opsional, untuk batch). */
     public function estimate(Order $order, ?array $fees = null): float
     {
@@ -116,13 +119,17 @@ class AdminFeeEstimator
             ->where('marketplace', $ch)->where('status', 'COMPLETED')
             ->where('product_revenue', '>', 0)->where('admin_fee', '>', 0);
 
-        // Rata-rata tarif variabel per channel (cadangan utk kategori minim data).
+        $recentSince = now()->subMonths(self::CALIBRATION_RECENT_MONTHS)->toDateString();
+        $aggSql = 'count(*) n, sum(product_revenue) rev, sum(admin_fee) fee';
+        $rateOf = fn ($row) => ($row && $row->n > 0 && $row->rev > 0)
+            ? max(0.0, ($row->fee - self::ORDER_PROCESSING_FEE * $row->n) / $row->rev * 100) : null;
+
+        // Rata-rata tarif variabel per channel — UTAMAKAN data terbaru; fallback semua data bila < minOrders.
         $channelRate = [];
         foreach (['SHOPEE', 'TIKTOKTOKO'] as $ch) {
-            $r = $verified($ch)->selectRaw('count(*) n, sum(product_revenue) rev, sum(admin_fee) fee')->first();
-            $channelRate[$ch] = ($r && $r->n > 0 && $r->rev > 0)
-                ? max(0.0, ($r->fee - self::ORDER_PROCESSING_FEE * $r->n) / $r->rev * 100)
-                : null;
+            $recent = $verified($ch)->where('order_date', '>=', $recentSince)->selectRaw($aggSql)->first();
+            $use = ($recent && $recent->n >= $minOrders) ? $recent : $verified($ch)->selectRaw($aggSql)->first();
+            $channelRate[$ch] = $rateOf($use);
         }
 
         // Belum ada data Laporan Penghasilan sama sekali → JANGAN ubah apa pun (no-op aman).
@@ -134,7 +141,7 @@ class AdminFeeEstimator
         $orders = Order::withoutGlobalScopes()->where('organization_id', $orgId)
             ->where('income_verified', true)->where('status', 'COMPLETED')
             ->where('product_revenue', '>', 0)->where('admin_fee', '>', 0)
-            ->select('id', 'marketplace', 'product_revenue', 'admin_fee')->get();
+            ->select('id', 'marketplace', 'product_revenue', 'admin_fee', 'order_date')->get();
 
         $catSet = [];
         foreach ($orders->pluck('id')->chunk(3000) as $chunk) {
@@ -146,24 +153,34 @@ class AdminFeeEstimator
             }
         }
 
+        // Kumpulkan dua ember: SEMUA & TERBARU (≤ N bulan). Pilih terbaru bila cukup.
         $agg = [];
+        $aggRecent = [];
         foreach ($orders as $o) {
             $cats = array_keys($catSet[$o->id] ?? []);
             if (count($cats) !== 1) {
                 continue; // hanya pesanan satu-kategori (atribusi bersih)
             }
             $key = $o->marketplace . '|' . $cats[0];
+            $rev = (float) $o->product_revenue;
+            $fee = (float) $o->admin_fee;
             $agg[$key]['n'] = ($agg[$key]['n'] ?? 0) + 1;
-            $agg[$key]['rev'] = ($agg[$key]['rev'] ?? 0) + (float) $o->product_revenue;
-            $agg[$key]['fee'] = ($agg[$key]['fee'] ?? 0) + (float) $o->admin_fee;
+            $agg[$key]['rev'] = ($agg[$key]['rev'] ?? 0) + $rev;
+            $agg[$key]['fee'] = ($agg[$key]['fee'] ?? 0) + $fee;
+            if ((string) $o->order_date >= $recentSince) {
+                $aggRecent[$key]['n'] = ($aggRecent[$key]['n'] ?? 0) + 1;
+                $aggRecent[$key]['rev'] = ($aggRecent[$key]['rev'] ?? 0) + $rev;
+                $aggRecent[$key]['fee'] = ($aggRecent[$key]['fee'] ?? 0) + $fee;
+            }
         }
         $perCat = [];
-        foreach ($agg as $key => $v) {
-            if ($v['n'] < $minOrders || $v['rev'] <= 0) {
+        foreach ($agg as $key => $all) {
+            $src = (isset($aggRecent[$key]) && $aggRecent[$key]['n'] >= $minOrders) ? $aggRecent[$key] : $all;
+            if ($src['n'] < $minOrders || $src['rev'] <= 0) {
                 continue;
             }
             [$ch, $cid] = explode('|', $key);
-            $perCat[$cid][$ch] = max(0.0, ($v['fee'] - self::ORDER_PROCESSING_FEE * $v['n']) / $v['rev'] * 100);
+            $perCat[$cid][$ch] = max(0.0, ($src['fee'] - self::ORDER_PROCESSING_FEE * $src['n']) / $src['rev'] * 100);
         }
 
         // Tulis tarif ke tiap kategori (per-kategori bila ada; selain itu rata-rata channel).
