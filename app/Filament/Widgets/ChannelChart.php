@@ -10,6 +10,8 @@ class ChannelChart extends ChartWidget
 {
     protected static ?int $sort = -1;
 
+    protected ?string $maxHeight = '280px';
+
     public function getHeading(): ?string
     {
         return 'Omzet per Channel';

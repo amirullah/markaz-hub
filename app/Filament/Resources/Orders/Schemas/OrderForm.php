@@ -77,7 +77,7 @@ class OrderForm
 
                 Section::make('Pendapatan')
                     ->description('Uang masuk dari pesanan ini.')
-                    ->columns(2)
+                    ->columns(3)
                     ->schema([
                         TextInput::make('product_revenue')
                             ->label('Omzet Produk')
@@ -92,7 +92,7 @@ class OrderForm
 
                 Section::make('Biaya')
                     ->description('Pengurang laba. HPP = modal produk.')
-                    ->columns(2)
+                    ->columns(3)
                     ->schema([
                         TextInput::make('cogs')
                             ->label('HPP (Modal)')

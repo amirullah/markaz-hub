@@ -12,6 +12,8 @@ class LabaPerBulanChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected ?string $maxHeight = '280px';
+
     public function getHeading(): ?string
     {
         return 'Laba & Omzet per Bulan (12 bulan terakhir)';

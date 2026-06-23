@@ -29,16 +29,18 @@ class ListOrders extends ListRecords
         $laba = (float) (clone $query)->sum(DB::raw(ProfitService::SQL_PROFIT));
         $rp = fn ($v): string => 'Rp ' . number_format((float) $v, 0, ',', '.');
 
-        $card = fn (string $label, string $value, string $color, string $icon): string =>
-            "<div style='flex:1 1 160px;border:1px solid #e2e8f0;border-radius:.85rem;padding:.7rem .95rem;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)'>"
-            . "<div style='font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.03em'>{$icon} {$label}</div>"
-            . "<div style='font-size:1.45rem;font-weight:800;color:{$color};line-height:1.25;margin-top:.1rem'>{$value}</div>"
-            . '</div>';
+        $card = fn (string $label, string $value, string $color, string $icon, string $bg): string =>
+            "<div style='flex:1 1 150px;display:flex;align-items:center;gap:.6rem;border:1px solid #e8edf3;border-radius:.7rem;padding:.5rem .75rem;background:#fff'>"
+            . "<div style='width:2rem;height:2rem;flex:none;display:flex;align-items:center;justify-content:center;border-radius:.55rem;background:{$bg};font-size:1rem'>{$icon}</div>"
+            . "<div style='min-width:0'>"
+            . "<div style='font-size:.7rem;color:#64748b;white-space:nowrap'>{$label}</div>"
+            . "<div style='font-size:1.15rem;font-weight:800;color:{$color};line-height:1.2'>{$value}</div>"
+            . '</div></div>';
 
-        $html = "<div style='display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.35rem'>"
-            . $card('Jumlah Pesanan', number_format($count, 0, ',', '.'), '#1e293b', '🧾')
-            . $card('Total Omzet', $rp($omzet), '#2563eb', '💰')
-            . $card('Total Laba', $rp($laba), $laba < 0 ? '#dc2626' : '#16a34a', '📈')
+        $html = "<div style='display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.25rem'>"
+            . $card('Jumlah Pesanan', number_format($count, 0, ',', '.'), '#0f172a', '🧾', '#f1f5f9')
+            . $card('Total Omzet', $rp($omzet), '#2563eb', '💰', '#eff6ff')
+            . $card('Total Laba', $rp($laba), $laba < 0 ? '#dc2626' : '#16a34a', '📈', $laba < 0 ? '#fef2f2' : '#f0fdf4')
             . '</div>';
 
         return new HtmlString($html);

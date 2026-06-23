@@ -19,120 +19,28 @@ class RiwayatPerubahan extends Page
     protected static ?int $navigationSort = 9;
 
     /**
-     * Catatan rilis — apa yang berubah di tiap versi (terbaru di atas).
-     * Tambahkan entri baru setiap ada perubahan.
+     * Catatan perubahan PER HARI (terbaru di atas). Tambahkan poin baru ke
+     * tanggal teratas setiap ada perubahan.
      */
     public const CHANGELOG = [
         [
-            'version' => '1.11',
-            'date' => '23 Jun 2026',
-            'title' => 'Tokopedia & TikTok benar-benar satu channel',
+            'date' => '23 Juni 2026',
             'changes' => [
-                'Input Toko & Pesanan kini hanya 1 pilihan "Tokopedia/TikTok" (bukan terpisah) — sesuai satu seller center.',
-                'Data lama Tokopedia/TikTok otomatis digabung; tampilan tabel, filter, & grafik menyesuaikan.',
+                'Perbaikan: import yang sebelumnya gagal kini berfungsi; pilihan toko saat import menampilkan channel-nya (Shopee / Tokopedia/TikTok) agar tidak tertukar.',
+                'Tokopedia & TikTok benar-benar jadi satu channel di input toko, pesanan, tabel, filter, dan grafik (sesuai satu seller center).',
+                'Halaman Pesanan: kartu total (Jumlah Pesanan, Omzet, Laba) di atas tabel yang mengikuti filter; filter ringkas (collapsible) & berlaku seketika; detail produk tampil di tiap pesanan; total mengikuti periode yang dipilih.',
+                'Estimasi biaya admin per kategori produk (termasuk biaya proses Rp1.250); 26 kategori resmi untuk semua akun; sistem memilih kategori produk otomatis.',
+                'Fitur Kosongkan Data (reset) dengan konfirmasi & aman per akun; tampilan dirapikan agar lebih menarik dan hemat tempat.',
             ],
         ],
         [
-            'version' => '1.10',
-            'date' => '23 Jun 2026',
-            'title' => 'Kosongkan data',
+            'date' => '22 Juni 2026',
             'changes' => [
-                'Fitur Kosongkan Data di menu Backup: hapus "hanya pesanan" atau "semua data bisnis" untuk mulai dari awal.',
-                'Dilengkapi konfirmasi (ketik KOSONGKAN), hanya menghapus data milik Anda sendiri, dan saran backup dulu.',
-            ],
-        ],
-        [
-            'version' => '1.9',
-            'date' => '23 Jun 2026',
-            'title' => 'Tampilan Pesanan lebih praktis',
-            'changes' => [
-                'Total pesanan kini tampil sebagai kartu menarik di ATAS tabel (Jumlah Pesanan, Total Omzet, Total Laba) dan mengikuti filter aktif.',
-                'Filter ditampilkan langsung di atas tabel & berlaku seketika (tanpa tombol terapkan) — lebih praktis, tetap bisa filter detail.',
-            ],
-        ],
-        [
-            'version' => '1.8',
-            'date' => '23 Jun 2026',
-            'title' => 'Detail produk & total pesanan',
-            'changes' => [
-                'Detail produk (item) kini tampil di setiap pesanan: SKU, nama, qty, harga, subtotal, HPP.',
-                'Tabel Pesanan menampilkan ringkasan total (jumlah pesanan, total omzet, total laba) yang mengikuti filter — mis. filter 1 minggu menampilkan total minggu itu.',
-            ],
-        ],
-        [
-            'version' => '1.7',
-            'date' => '23 Jun 2026',
-            'title' => 'Kategori resmi lengkap & biaya tambahan',
-            'changes' => [
-                'Kategori diperbanyak jadi 26 kategori dengan nama & tarif mengikuti dokumentasi resmi marketplace (Shopee & Tokopedia/TikTok).',
-                'Semua organisasi/akun otomatis mendapat kategori default (sebelumnya hanya akun utama).',
-                'Estimasi biaya admin kini menambahkan biaya proses pesanan Rp1.250 (resmi).',
-                'Halaman Riwayat Perubahan ini.',
-            ],
-        ],
-        [
-            'version' => '1.6',
-            'date' => '23 Jun 2026',
-            'title' => 'Estimasi biaya admin per kategori',
-            'changes' => [
-                'Menu Kategori: tarif % biaya admin Shopee & Tokopedia/TikTok per kategori.',
-                'Sistem otomatis memilih kategori produk dari nama (bisa diubah).',
-                'Tombol "Isi Estimasi Biaya Admin": mengisi biaya admin pesanan yang belum final agar laba lebih akurat.',
-            ],
-        ],
-        [
-            'version' => '1.5',
-            'date' => '23 Jun 2026',
-            'title' => 'Filter mudah, gabung channel, restore',
-            'changes' => [
-                'Filter cepat per Periode (Minggu/Bulan/Tahun ini, 30 hari, dll).',
-                'Tokopedia & TikTok digabung jadi satu channel di filter.',
-                'Fitur Pulihkan (Restore) dari file backup.',
-            ],
-        ],
-        [
-            'version' => '1.4',
-            'date' => '22 Jun 2026',
-            'title' => 'Audit menyeluruh: keamanan & konsistensi',
-            'changes' => [
-                'Penguatan isolasi data antar-akun & login Google lebih aman.',
-                'Semua form dirapikan ke Bahasa Indonesia + nuansa Rupiah.',
-                'Format angka & istilah dikonsistenkan.',
-            ],
-        ],
-        [
-            'version' => '1.3',
-            'date' => '22 Jun 2026',
-            'title' => 'Backup & pemantauan error',
-            'changes' => [
-                'Fitur Backup data (.sql).',
-                'Pemantauan error (Sentry) — aktif bila DSN diisi.',
-            ],
-        ],
-        [
-            'version' => '1.2',
-            'date' => '22 Jun 2026',
-            'title' => 'Notifikasi & tampilan',
-            'changes' => [
-                'Notifikasi (lonceng) — mis. setelah import.',
-                'Sidebar diperkecil agar konten lebih lebar.',
-            ],
-        ],
-        [
-            'version' => '1.1',
-            'date' => '22 Jun 2026',
-            'title' => 'Insight & Aktivitas',
-            'changes' => [
-                'Halaman Insight & Produk Merugi.',
-                'Log Aktivitas (audit perubahan).',
-            ],
-        ],
-        [
-            'version' => '1.0',
-            'date' => '22 Jun 2026',
-            'title' => 'Rilis awal MarkazHub v2',
-            'changes' => [
-                'Aplikasi baru (Laravel + Filament): multi-akun, login Google, import laporan, dashboard laba, perhitungan laba teraudit.',
+                'Rilis MarkazHub versi baru (lebih cepat & modern): multi-akun, login Google, import laporan, dashboard laba, perhitungan laba teraudit.',
+                'Halaman Insight & Produk Merugi dan Log Aktivitas.',
+                'Notifikasi (lonceng) dan tampilan sidebar yang lebih ringkas.',
+                'Fitur Backup data & pemantauan error (Sentry).',
+                'Audit menyeluruh: penguatan keamanan antar-akun, login Google lebih aman, seluruh tampilan dirapikan ke Bahasa Indonesia & nuansa Rupiah.',
             ],
         ],
     ];
