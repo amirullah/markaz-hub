@@ -23,8 +23,8 @@ class ChannelChart extends ChartWidget
             ->groupBy('marketplace')
             ->pluck('omzet', 'marketplace');
 
-        $labelMap = ['SHOPEE' => 'Shopee', 'TOKOPEDIA' => 'Tokopedia', 'TIKTOK' => 'TikTok'];
-        $colorMap = ['SHOPEE' => '#f97316', 'TOKOPEDIA' => '#22c55e', 'TIKTOK' => '#64748b'];
+        $labelMap = ['SHOPEE' => 'Shopee', 'TIKTOKTOKO' => 'Tokopedia/TikTok'];
+        $colorMap = ['SHOPEE' => '#f97316', 'TIKTOKTOKO' => '#22c55e'];
 
         $labels = []; $data = []; $colors = [];
         foreach ($labelMap as $key => $label) {

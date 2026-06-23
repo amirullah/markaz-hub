@@ -24,6 +24,15 @@ class RiwayatPerubahan extends Page
      */
     public const CHANGELOG = [
         [
+            'version' => '1.11',
+            'date' => '23 Jun 2026',
+            'title' => 'Tokopedia & TikTok benar-benar satu channel',
+            'changes' => [
+                'Input Toko & Pesanan kini hanya 1 pilihan "Tokopedia/TikTok" (bukan terpisah) — sesuai satu seller center.',
+                'Data lama Tokopedia/TikTok otomatis digabung; tampilan tabel, filter, & grafik menyesuaikan.',
+            ],
+        ],
+        [
             'version' => '1.10',
             'date' => '23 Jun 2026',
             'title' => 'Kosongkan data',

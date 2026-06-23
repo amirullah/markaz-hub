@@ -23,12 +23,14 @@ class StoresTable
                 TextColumn::make('marketplace')
                     ->label('Channel')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'SHOPEE' => 'warning',
-                        'TOKOPEDIA' => 'success',
-                        'TIKTOK' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'SHOPEE' => 'Shopee',
+                        'TIKTOKTOKO' => 'Tokopedia/TikTok',
+                        'TOKOPEDIA' => 'Tokopedia',
+                        'TIKTOK' => 'TikTok',
+                        default => $state,
+                    })
+                    ->color(fn (string $state): string => $state === 'SHOPEE' ? 'warning' : 'success'),
                 TextColumn::make('orders_count')
                     ->label('Jumlah Pesanan')
                     ->counts('orders')

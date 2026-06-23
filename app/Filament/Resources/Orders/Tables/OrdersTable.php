@@ -40,12 +40,14 @@ class OrdersTable
                 TextColumn::make('marketplace')
                     ->label('Channel')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'SHOPEE' => 'warning',
-                        'TOKOPEDIA' => 'success',
-                        'TIKTOK' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'SHOPEE' => 'Shopee',
+                        'TIKTOKTOKO' => 'Tokopedia/TikTok',
+                        'TOKOPEDIA' => 'Tokopedia',
+                        'TIKTOK' => 'TikTok',
+                        default => $state,
+                    })
+                    ->color(fn (string $state): string => $state === 'SHOPEE' ? 'warning' : 'success'),
                 TextColumn::make('fulfillment')
                     ->label('Pemenuhan')
                     ->badge()
@@ -110,7 +112,7 @@ class OrdersTable
                             ->label('Channel')
                             ->options([
                                 'SHOPEE' => 'Shopee',
-                                'TOKOTIKTOK' => 'Tokopedia/TikTok',
+                                'TIKTOKTOKO' => 'Tokopedia/TikTok',
                             ])
                             ->placeholder('Semua'),
                     ])
@@ -118,7 +120,7 @@ class OrdersTable
                         $data['value'] ?? null,
                         fn (Builder $query, $v): Builder => $v === 'SHOPEE'
                             ? $query->where('marketplace', 'SHOPEE')
-                            : $query->whereIn('marketplace', ['TOKOPEDIA', 'TIKTOK']),
+                            : $query->whereIn('marketplace', ['TIKTOKTOKO', 'TOKOPEDIA', 'TIKTOK']),
                     )),
                 SelectFilter::make('fulfillment')
                     ->label('Pemenuhan')

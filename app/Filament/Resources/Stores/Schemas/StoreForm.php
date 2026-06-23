@@ -31,7 +31,7 @@ class StoreForm
                     ->validationMessages(['unique' => 'Toko dengan nama & channel ini sudah ada.']),
                 Select::make('marketplace')
                     ->label('Channel')
-                    ->options(['SHOPEE' => 'Shopee', 'TOKOPEDIA' => 'Tokopedia', 'TIKTOK' => 'TikTok'])
+                    ->options(['SHOPEE' => 'Shopee', 'TIKTOKTOKO' => 'Tokopedia/TikTok'])
                     ->required()
                     ->native(false),
                 Toggle::make('active')

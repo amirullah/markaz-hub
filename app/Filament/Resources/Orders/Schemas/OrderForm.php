@@ -28,8 +28,7 @@ class OrderForm
 
     public const CHANNEL = [
         'SHOPEE' => 'Shopee',
-        'TOKOPEDIA' => 'Tokopedia',
-        'TIKTOK' => 'TikTok',
+        'TIKTOKTOKO' => 'Tokopedia/TikTok',
     ];
 
     public static function configure(Schema $schema): Schema
