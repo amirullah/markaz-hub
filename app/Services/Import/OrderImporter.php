@@ -75,10 +75,11 @@ class OrderImporter
 
         $summary = [];
         if ($jakmall) {
-            [$ins, $upd, $changes] = $this->importJakmallProducts(array_values($jakmall));
+            [$ins, $upd, $changes, $skippedOld] = $this->importJakmallProducts(array_values($jakmall));
             $bf = $this->backfillHpp();
             if ($updateOldHpp) $bf += $this->recomputeHpp($hppSince);
-            $summary['jakmall'] = "Master: $ins baru, $upd diperbarui" . ($changes ? ', ' . count($changes) . ' harga berubah' : '') . ($bf ? ", $bf pesanan ber-HPP" : '') . '.';
+            $summary['jakmall'] = "Master: $ins baru, $upd diperbarui" . ($changes ? ', ' . count($changes) . ' harga berubah' : '')
+                . ($skippedOld ? ", $skippedOld dilewati (data lebih lama)" : '') . ($bf ? ", $bf pesanan ber-HPP" : '') . '.';
             $summary['hpp_changes'] = $changes;
         }
         if ($orderSources) {
@@ -104,30 +105,41 @@ class OrderImporter
             ]);
         }
         $oldCost = DB::table('products')->where('organization_id', $this->orgId)->pluck('cost_price', 'sku')->all();
+        $oldDate = DB::table('products')->where('organization_id', $this->orgId)->pluck('cost_changed_at', 'sku')->all();
 
-        $ins = 0; $upd = 0; $changes = []; $now = now();
+        $ins = 0; $upd = 0; $skippedOld = 0; $changes = []; $now = now();
         $prodRows = []; $pmiRows = []; $priceRows = [];
         foreach ($products as $p) {
-            if (($p['sku'] ?? '') === '') continue;
+            $sku = $p['sku'] ?? '';
+            if ($sku === '') continue;
             $new = (float) $p['cost'];
             $changedAt = mp_jakmall_date($p['changedAt'] ?? null); // tgl "Perubahan Terakhir" dari master
-            if (isset($oldCost[$p['sku']])) {
-                if (abs((float) $oldCost[$p['sku']] - $new) > 1) {
-                    $changes[] = ['sku' => $p['sku'], 'name' => (string) $p['name'], 'old' => (float) $oldCost[$p['sku']], 'new' => $new];
-                    $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $p['sku'], 'old_price' => (float) $oldCost[$p['sku']],
+            $exists = array_key_exists($sku, $oldCost);
+            $curDate = $oldDate[$sku] ?? null;
+
+            // Data master LEBIH LAMA dari yang tersimpan → JANGAN ubah harga (cegah harga balik ke lama).
+            if ($exists && $curDate !== null && $changedAt !== null && $changedAt < (string) $curDate) {
+                $skippedOld++;
+                continue;
+            }
+
+            if ($exists) {
+                if (abs((float) $oldCost[$sku] - $new) > 1) {
+                    $changes[] = ['sku' => $sku, 'name' => (string) $p['name'], 'old' => (float) $oldCost[$sku], 'new' => $new];
+                    $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'old_price' => (float) $oldCost[$sku],
                         'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
                 }
                 $upd++;
             } else {
                 $ins++;
                 // Harga awal produk baru = titik riwayat pertama.
-                $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $p['sku'], 'old_price' => null,
+                $priceRows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'old_price' => null,
                     'new_price' => $new, 'changed_at' => $changedAt ?? $now, 'created_at' => $now, 'updated_at' => $now];
             }
-            $prodRows[] = ['organization_id' => $this->orgId, 'sku' => $p['sku'], 'name' => mb_substr((string) $p['name'], 0, 255),
+            $prodRows[] = ['organization_id' => $this->orgId, 'sku' => $sku, 'name' => mb_substr((string) $p['name'], 0, 255),
                 'cost_price' => $new, 'dropship_cost' => $new, 'cost_changed_at' => $changedAt, 'supplier_id' => $supId, 'active' => 1, 'created_at' => $now, 'updated_at' => $now];
             foreach ($p['mpIds'] ?? [] as $mpId) {
-                $pmiRows[] = ['organization_id' => $this->orgId, 'marketplace_product_id' => mb_substr((string) $mpId, 0, 64), 'sku' => $p['sku'], 'created_at' => $now, 'updated_at' => $now];
+                $pmiRows[] = ['organization_id' => $this->orgId, 'marketplace_product_id' => mb_substr((string) $mpId, 0, 64), 'sku' => $sku, 'created_at' => $now, 'updated_at' => $now];
             }
         }
         foreach (array_chunk($prodRows, 500) as $c) {
@@ -139,7 +151,7 @@ class OrderImporter
         foreach (array_chunk($priceRows, 500) as $c) {
             DB::table('product_price_changes')->insert($c);
         }
-        return [$ins, $upd, $changes];
+        return [$ins, $upd, $changes, $skippedOld];
     }
 
     /**
