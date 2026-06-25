@@ -303,13 +303,26 @@ class OrderImporter
         return count($rows);
     }
 
-    /** Isi HPP yang masih kosong (jangan timpa HPP lama — histori harga). */
+    /**
+     * Ekspresi SQL: HPP per-unit yang BERLAKU saat TANGGAL PESANAN — harga riwayat terbaru
+     * dgn changed_at <= order_date; fallback harga awal produk; lalu modal katalog terkini.
+     * Dipakai backfillHpp() & recomputeHpp() (konteks JOIN: order_items i, orders o, products p).
+     */
+    private function histCostExpr(): string
+    {
+        return 'COALESCE('
+            . '(SELECT ppc.new_price FROM product_price_changes ppc WHERE ppc.sku = i.sku AND ppc.organization_id = o.organization_id AND ppc.changed_at <= o.order_date ORDER BY ppc.changed_at DESC, ppc.id DESC LIMIT 1),'
+            . '(SELECT ppc2.new_price FROM product_price_changes ppc2 WHERE ppc2.sku = i.sku AND ppc2.organization_id = o.organization_id ORDER BY ppc2.changed_at ASC, ppc2.id ASC LIMIT 1),'
+            . 'p.cost_price)';
+    }
+
+    /** Isi HPP yang masih kosong (jangan timpa HPP lama). HPP = harga modal saat TANGGAL pesanan. */
     public function backfillHpp(): int
     {
         $cond = "o.organization_id = ? AND o.status NOT IN ('CANCELLED','RETURNED') AND o.fulfillment='SELF' AND o.deleted_at IS NULL";
         $before = (int) DB::selectOne("SELECT COUNT(*) c FROM orders o WHERE $cond AND o.cogs=0", [$this->orgId])->c;
         DB::statement("UPDATE order_items i JOIN orders o ON o.id=i.order_id JOIN products p ON p.sku=i.sku AND p.organization_id=o.organization_id
-            SET i.unit_cost=p.cost_price WHERE $cond AND (i.unit_cost=0 OR i.unit_cost IS NULL)", [$this->orgId]);
+            SET i.unit_cost=" . $this->histCostExpr() . " WHERE $cond AND (i.unit_cost=0 OR i.unit_cost IS NULL)", [$this->orgId]);
         DB::statement("UPDATE orders o SET o.cogs=COALESCE((SELECT SUM(i.unit_cost*i.qty) FROM order_items i WHERE i.order_id=o.id),0)
             WHERE $cond AND o.cogs=0", [$this->orgId]);
         $after = (int) DB::selectOne("SELECT COUNT(*) c FROM orders o WHERE $cond AND o.cogs=0", [$this->orgId])->c;
@@ -322,7 +335,7 @@ class OrderImporter
         $cond = "o.organization_id = ? AND o.status NOT IN ('CANCELLED','RETURNED') AND o.fulfillment='SELF' AND o.deleted_at IS NULL"
             . ($since ? " AND o.order_date >= " . DB::getPdo()->quote($since) : '');
         DB::statement("UPDATE order_items i JOIN orders o ON o.id=i.order_id JOIN products p ON p.sku=i.sku AND p.organization_id=o.organization_id
-            SET i.unit_cost=p.cost_price WHERE $cond", [$this->orgId]);
+            SET i.unit_cost=" . $this->histCostExpr() . " WHERE $cond", [$this->orgId]);
         return DB::update("UPDATE orders o SET o.cogs=COALESCE((SELECT SUM(i.unit_cost*i.qty) FROM order_items i WHERE i.order_id=o.id),0) WHERE $cond", [$this->orgId]);
     }
 
@@ -390,6 +403,34 @@ class OrderImporter
             }
         }
 
+        // Riwayat harga modal per SKU → HPP dipilih sesuai TANGGAL pesanan (bukan harga terkini).
+        $priceHist = [];
+        if ($skus) {
+            foreach (array_chunk(array_keys($skus), 500) as $chunk) {
+                foreach (DB::table('product_price_changes')->where('organization_id', $org)->whereIn('sku', $chunk)
+                    ->orderBy('changed_at')->orderBy('id')->get(['sku', 'new_price', 'changed_at']) as $h) {
+                    $priceHist[$h->sku][] = ['d' => substr((string) $h->changed_at, 0, 10), 'p' => (float) $h->new_price];
+                }
+            }
+        }
+        // Modal per-unit yang BERLAKU saat tanggal pesanan: harga riwayat terbaru dgn tgl <= tgl pesanan;
+        // fallback harga awal (pesanan lebih lama dari semua riwayat); lalu modal katalog terkini.
+        $costAt = function (?array $product, string $sku, ?string $orderDate) use ($priceHist): float {
+            $hist = $priceHist[$sku] ?? [];
+            if (! $hist) {
+                return (float) ($product['cost_price'] ?? 0);
+            }
+            $d = $orderDate ? substr($orderDate, 0, 10) : null;
+            $chosen = $hist[0]['p'];
+            foreach ($hist as $h) {
+                if ($d !== null && $h['d'] <= $d) {
+                    $chosen = $h['p'];
+                }
+            }
+
+            return $chosen;
+        };
+
         $created = 0; $updated = 0; $unchanged = 0; $r = fn ($v) => (int) round((float) $v);
 
         foreach ($prepared as $pp) {
@@ -402,10 +443,11 @@ class OrderImporter
             elseif ($ex) $ful = $ex['fulfillment'];
             else $ful = $defaultFulfillment;
 
+            $orderDate = mp_parse_date($o['orderDate'] ?? null); // utk pilih HPP historis sesuai tanggal
             $cogs = 0; $items = [];
             foreach ($o['items'] as $it) {
                 $product = (!empty($it['sku']) && isset($productBySku[$it['sku']])) ? $productBySku[$it['sku']] : null;
-                $unitCost = $product ? (float) $product['cost_price'] : 0;
+                $unitCost = $product ? $costAt($product, (string) $it['sku'], $orderDate) : 0;
                 if ($ful === 'SELF') $cogs += $unitCost * $it['qty'];
                 $items[] = ['product_id' => $product['id'] ?? null, 'sku' => $it['sku'] ?: null, 'name' => $it['name'],
                     'qty' => $it['qty'], 'qty_assumed' => !empty($it['qtyAssumed']) ? 1 : 0, 'unit_price' => $it['unitPrice'], 'unit_cost' => $unitCost];
