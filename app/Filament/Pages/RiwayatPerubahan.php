@@ -26,6 +26,7 @@ class RiwayatPerubahan extends Page
         [
             'date' => '25 Juni 2026',
             'changes' => [
+                'Perbaikan laba dropship: pesanan dropship yang masih "Dibayar" (belum selesai/dicairkan marketplace) TIDAK lagi tampil sebagai rugi palsu. Selama omzet belum keluar, labanya dianggap PENDING (Rp 0) — biaya dropship baru dihitung saat pesanan selesai & omzet masuk. Total Laba jadi lebih akurat (tak terseret pesanan yang belum tuntas).',
                 'Perbaikan PENTING: setelah impor Laporan Marketplace, estimasi biaya admin & laba kini LANGSUNG terhitung otomatis — tak perlu lagi menekan tombol "Isi Estimasi Biaya Admin" manual. (Dulu pesanan baru biayanya 0 sampai tombol itu ditekan, sehingga laba terlihat "belum dihitung".)',
                 'Laporan per Toko kini bisa dilihat PER BULAN: pilih bulan (atau "Setahun") di bagian Laporan per Toko untuk melihat omzet/laba tiap toko pada bulan itu.',
                 'Filter Toko di halaman Pesanan dibuat lebih lebar (muat nama + channel) dan teks daftar tokonya sedikit diperkecil agar ringkas.',
