@@ -12,6 +12,39 @@
     <div style="display:flex;flex-direction:column;gap:1rem;max-width:1040px">
         <p style="margin:0;color:#475569;font-size:.9rem">Pilih jenis impor sesuai file Anda. Tiap kotak punya tombolnya sendiri — tinggal klik di kotak yang sesuai.</p>
 
+        {{-- ===== Rekomendasi: file apa yang perlu diupload + rentang tanggal ===== --}}
+        @php
+            $saranImpor = app(\App\Services\ImportSuggestion::class)->compute();
+            $adaPesanan = \App\Models\Order::query()->exists();
+        @endphp
+        @if (count($saranImpor))
+            <div style="border:1px solid #fcd34d;background:#fffbeb;border-radius:.85rem;padding:1rem 1.2rem">
+                <div style="font-weight:700;color:#92400e;font-size:1rem;display:flex;align-items:center;gap:.45rem">
+                    <svg style="width:1.15rem;height:1.15rem" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 7.5 12 3m0 0L7.5 7.5M12 3v13.5"/></svg>
+                    File yang perlu segera diupload
+                </div>
+                <div style="font-size:.82rem;color:#78350f;margin:.25rem 0 .8rem">Agar laba <strong>final</strong> &amp; data lengkap, unggah file berikut sesuai rentang tanggalnya:</div>
+                <div style="display:flex;flex-direction:column;gap:.5rem">
+                    @foreach ($saranImpor as $s)
+                        @php [$bg, $fg, $lbl] = $s['urgency'] === 'high' ? ['#fee2e2', '#991b1b', 'Penting'] : ['#dbeafe', '#1e40af', 'Perlu']; @endphp
+                        <div style="display:flex;align-items:center;gap:.7rem;background:#fff;border:1px solid #fde68a;border-radius:.6rem;padding:.6rem .8rem">
+                            <span style="font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:6px;background:{{ $bg }};color:{{ $fg }};white-space:nowrap">{{ $lbl }}</span>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-weight:600;color:#1e293b;font-size:.88rem">{{ $s['file'] }}</div>
+                                <div style="font-size:.76rem;color:#64748b">{{ number_format($s['count'], 0, ',', '.') }} pesanan · {{ $s['note'] }} · unggah via <strong>{{ $s['via'] }}</strong></div>
+                            </div>
+                            <div style="text-align:right;white-space:nowrap">
+                                <div style="font-size:.66rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em">periode</div>
+                                <div style="font-weight:700;font-size:.82rem;color:#334155">{{ $s['dari'] }} – {{ $s['sampai'] }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @elseif ($adaPesanan)
+            <div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:.85rem;padding:.8rem 1rem;font-size:.85rem;color:#15803d">✅ Data lengkap — tidak ada file yang perlu diupload saat ini.</div>
+        @endif
+
         @unless ($hasStores)
             <div style="border:1px solid #fcd34d;background:#fffbeb;border-radius:.85rem;padding:1rem 1.2rem">
                 <div style="font-weight:700;color:#92400e">🏪 Buat toko dulu</div>

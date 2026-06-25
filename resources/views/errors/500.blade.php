@@ -1,0 +1,5 @@
+@php($mkzTitle = 'Gangguan Server')
+@php($mkzCode = '500')
+@php($mkzHeading = 'Terjadi gangguan sementara')
+@php($mkzBody = 'Maaf, ada kendala di server kami. Coba muat ulang halaman sebentar lagi. Bila terus berulang, beri tahu kami.')
+@include('errors.mkz')

@@ -30,6 +30,8 @@ class StatsOverview extends StatsOverviewWidget
                 'retur' => Order::query()->where('status', 'RETURNED')->count(),
                 'belumFinal' => Order::query()->labaBelumFinal()->count(),
                 'pesananRugi' => Order::query()->where('status', 'COMPLETED')->whereRaw(ProfitService::sqlProfit() . ' < 0')->count(),
+                'labaSemu' => Order::query()->labaSemu()->count(),
+                'janggal' => Order::query()->janggal()->count(),
                 'sparkLaba' => array_values(array_map(fn ($m) => round($m['laba']), $months)),
                 'sparkOmzet' => array_values(array_map(fn ($m) => round($m['omzet']), $months)),
             ];
@@ -42,6 +44,8 @@ class StatsOverview extends StatsOverviewWidget
         $retur = $d['retur'];
         $belumFinal = $d['belumFinal'];
         $pesananRugi = $d['pesananRugi'];
+        $labaSemu = $d['labaSemu'] ?? 0;
+        $janggal = $d['janggal'] ?? 0;
         $sparkLaba = $d['sparkLaba'];
         $sparkOmzet = $d['sparkOmzet'];
         $aov = $jumlah > 0 ? $omzet / $jumlah : 0;
@@ -49,37 +53,62 @@ class StatsOverview extends StatsOverviewWidget
 
         $rp = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
 
+        // Kartu bisa diklik → buka data terkait yang sudah terfilter.
+        $ordersUrl = fn (array $filters = []): string => \App\Filament\Resources\Orders\OrderResource::getUrl('index')
+            . ($filters ? '?' . http_build_query(['filters' => $filters]) : '');
+        $insightUrl = \App\Filament\Pages\Insight::getUrl();
+
         return [
             Stat::make('Omzet (operasional)', $rp($omzet))
-                ->description($jumlah . ' pesanan selesai/dikirim')
+                ->description($jumlah . ' pesanan selesai/dikirim — lihat')
                 ->descriptionIcon('heroicon-m-shopping-bag')
                 ->chart($sparkOmzet ?: [0, 0])
-                ->color('primary'),
+                ->color('primary')
+                ->url($ordersUrl()),
             Stat::make('Laba Bersih', $rp($laba))
                 ->description('setelah modal & biaya marketplace')
                 ->descriptionIcon($laba < 0 ? 'heroicon-m-arrow-trending-down' : 'heroicon-m-arrow-trending-up')
                 ->chart($sparkLaba ?: [0, 0])
-                ->color($laba < 0 ? 'danger' : 'success'),
+                ->color($laba < 0 ? 'danger' : 'success')
+                ->url($insightUrl),
             Stat::make('Margin Laba', number_format($margin, 1, ',', '.') . '%')
-                ->description('laba dibanding omzet')
+                ->description('laba dibanding omzet — analisa')
                 ->descriptionIcon('heroicon-m-chart-pie')
-                ->color($margin < 0 ? 'danger' : ($margin < 5 ? 'warning' : 'success')),
+                ->color($margin < 0 ? 'danger' : ($margin < 5 ? 'warning' : 'success'))
+                ->url($insightUrl),
             Stat::make('Rata-rata / Pesanan', $rp($aov))
                 ->description('nilai rata-rata per pesanan')
                 ->descriptionIcon('heroicon-m-calculator')
-                ->color('info'),
+                ->color('info')
+                ->url($ordersUrl()),
             Stat::make('Pesanan Rugi', number_format($pesananRugi, 0, ',', '.'))
-                ->description('pesanan selesai dengan laba minus')
+                ->description('selesai dengan laba minus — lihat daftar')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color($pesananRugi > 0 ? 'danger' : 'success'),
+                ->color($pesananRugi > 0 ? 'danger' : 'success')
+                ->url($ordersUrl(['hasil_laba' => ['value' => 'rugi']])),
             Stat::make('Pesanan Batal', number_format($batal, 0, ',', '.'))
                 ->description($retur > 0 ? '+ ' . number_format($retur, 0, ',', '.') . ' dikembalikan/retur' : 'tidak dihitung di laba')
                 ->descriptionIcon('heroicon-m-x-circle')
-                ->color('warning'),
+                ->color('warning')
+                ->url($ordersUrl(['status' => ['values' => ['CANCELLED']]])),
+            Stat::make('Laba Semu (HPP kosong)', number_format($labaSemu, 0, ',', '.'))
+                ->description($labaSemu > 0 ? 'omzet ada tapi modal 0 → laba terlihat besar, belum nyata' : 'semua HPP sudah terisi')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color($labaSemu > 0 ? 'danger' : 'success')
+                ->url($ordersUrl(['status_laba' => ['value' => 'laba_semu']])),
+            // Kartu Janggal hanya tampil bila berjualan dropship (sesuai toggle Pengaturan).
+            ...(\App\Models\Organization::currentUsesDropship() ? [
+                Stat::make('Pesanan Janggal', number_format($janggal, 0, ',', '.'))
+                    ->description($janggal > 0 ? 'biaya dropship ada tapi belum jadi dropship — perlu disinkronkan' : 'data dropship sudah sinkron')
+                    ->descriptionIcon('heroicon-m-shield-exclamation')
+                    ->color($janggal > 0 ? 'danger' : 'success')
+                    ->url($ordersUrl(['janggal' => ['value' => 'janggal']])),
+            ] : []),
             Stat::make('Laba Belum Final', number_format($belumFinal, 0, ',', '.'))
                 ->description($belumFinal > 0 ? 'biaya estimasi / HPP-modal belum ada — laba belum pasti' : 'semua laba sudah final')
                 ->descriptionIcon('heroicon-m-clock')
-                ->color($belumFinal > 0 ? 'warning' : 'success'),
+                ->color($belumFinal > 0 ? 'warning' : 'success')
+                ->url($ordersUrl(['status_laba' => ['value' => 'belum_final']])),
         ];
     }
 

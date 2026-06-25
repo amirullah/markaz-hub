@@ -16,26 +16,25 @@ class CategoriesTable
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nama Kategori')
+                    ->label('Kategori')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
-                TextColumn::make('fee_shopee')
-                    ->label('% Admin Shopee')
-                    ->formatStateUsing(fn ($state): string => rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ',') . '%')
-                    ->sortable()
-                    ->alignEnd(),
-                TextColumn::make('fee_tokotiktok')
-                    ->label('% Admin Tokopedia/TikTok')
-                    ->formatStateUsing(fn ($state): string => rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ',') . '%')
-                    ->sortable()
-                    ->alignEnd(),
                 TextColumn::make('products_count')
                     ->label('Jumlah Produk')
                     ->counts('products')
                     ->sortable()
-                    ->alignEnd()
-                    ->toggleable(),
+                    ->alignEnd(),
+                TextColumn::make('fee_shopee')
+                    ->label('Admin Shopee')
+                    ->formatStateUsing(fn ($state): string => rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ',') . '%')
+                    ->sortable()
+                    ->alignEnd(),
+                TextColumn::make('fee_tokotiktok')
+                    ->label('Admin Toped/TikTok')
+                    ->formatStateUsing(fn ($state): string => rtrim(rtrim(number_format((float) $state, 2, ',', '.'), '0'), ',') . '%')
+                    ->sortable()
+                    ->alignEnd(),
             ])
             ->recordActions([
                 EditAction::make(),

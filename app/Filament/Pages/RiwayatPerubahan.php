@@ -24,6 +24,34 @@ class RiwayatPerubahan extends Page
      */
     public const CHANGELOG = [
         [
+            'date' => '25 Juni 2026',
+            'changes' => [
+                'Halaman Pesanan lebih lengkap: filter Periode cepat (Bulan ini / 30 hari / 90 hari / Tahun ini) plus rentang tanggal sendiri, dan kini bisa pilih BEBERAPA toko & BEBERAPA status sekaligus (mis. Dibatalkan + Dikirim). Tiap baris ringkas dua baris, klik baris untuk membuka pesanan, kolom Margin % bisa diurutkan, pencarian ikut nama pembeli.',
+                'Halaman Produk dirapikan: klik baris untuk mengubah produk, kolom (Modal/Kategori/Admin %) bisa diurutkan, plus filter lengkap — Supplier, Kategori, Aktif/Nonaktif, harga pernah berubah, rentang modal, dan rentang tanggal harga diubah.',
+                'Halaman detail/ubah Pesanan ditata ulang 2 kolom: rincian produk di kiri dan panel "Ringkasan Laba" di kanan yang menghitung laba langsung saat diubah — lengkap dengan judul No. Pesanan, info toko/tanggal/pembeli, dan tombol Kembali.',
+                'BARU — Pengingat upload pintar: Dashboard & halaman Impor menampilkan file apa yang perlu diunggah, berapa pesanan terdampak, dan rentang tanggalnya — agar laba cepat final ("Data lengkap" bila tak ada yang kurang).',
+                'BARU — Tombol "Tandai Mode Otomatis" di halaman Toko: sistem menebak mode tiap toko (Dropship saja / Packing sendiri saja) dari riwayat pesanannya, tanpa menimpa toko yang sudah Anda tandai sendiri.',
+                'BARU — Halaman error yang ramah: bila terjadi 404/403/gangguan server, muncul halaman ber-logo MarkazHub berbahasa Indonesia yang menjelaskan kemungkinan penyebab (mis. data milik akun lain) dengan tombol kembali ke Dashboard.',
+                'BARU — Menu Laporan: laporan laba BULANAN & TAHUNAN (omzet, laba, margin, jumlah pesanan per periode). Klik baris periode untuk langsung membuka pesanannya.',
+                'BARU — Mode toko: tandai tiap toko sebagai "Dropship saja", "Packing sendiri saja", atau "Keduanya". Sistem otomatis menandai "Pesanan Janggal" — pesanan yang pemenuhannya tak sesuai mode tokonya — di Dashboard, halaman Toko, dan filter Pesanan.',
+                'Backup lebih aman & ringkas: file .zip kecil yang TIDAK lagi menyertakan data login; restore jauh lebih tahan-banting (kebal karakter khusus & beda setelan server).',
+                'BARU — Pulihkan dari akun lain: backup dari akun mana pun bisa dipulihkan ke akun Anda; ID & relasi (toko/produk/pesanan) dipetakan ulang otomatis (tanpa bentrok), kategori dicocokkan per-nama, dan akun sumber tak tersentuh. Kategori kini ikut dicadangkan.',
+                'Semua kartu ringkasan (Dashboard, atas tabel Pesanan, dan Insight) BISA DIKLIK langsung ke data terkait — filternya otomatis terpilih. Filter baru "Hasil: Untung/Rugi" di halaman Pesanan.',
+                'BARU — Salin massal: conteng beberapa baris lalu Tindakan → "Salin No. Pesanan" / "Salin SKU Produk" (di Pesanan) atau "Salin SKU" (di Produk). Hasilnya satu nilai per baris, siap tempel (Ctrl+V) di Excel.',
+                'Perbaikan: "Salin SKU Produk" di halaman Pesanan kini benar-benar menyalin SKU (sebelumnya keliru menganggap "tidak ada SKU" walau pesanannya jelas ber-SKU).',
+                'Ukuran filter sedikit diperbesar agar lebih mudah ditekan.',
+            ],
+        ],
+        [
+            'date' => '24 Juni 2026',
+            'changes' => [
+                'Bisa membaca file Laporan Penghasilan berbahasa INGGRIS (TikTok/Tokopedia) — sebelumnya hanya format Indonesia.',
+                'Kartu baru "Laba Semu (HPP kosong)": menandai pesanan yang labanya terlihat besar padahal modal/HPP belum diisi, agar Total Laba tidak menyesatkan.',
+                'Insight: analisa SEBAB pesanan rugi (jual di bawah modal / biaya admin tinggi / voucher-ongkir besar / margin tipis) lengkap dengan saran tindakan dalam waktu dekat.',
+                'Area unggah file impor diperbesar agar lebih mudah menyeret berkas.',
+            ],
+        ],
+        [
             'date' => '23 Juni 2026',
             'changes' => [
                 'Perbaikan: import yang sebelumnya gagal kini berfungsi; pilihan toko saat import menampilkan channel-nya (Shopee / Tokopedia/TikTok) agar tidak tertukar.',

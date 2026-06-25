@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Orders;
 use App\Filament\Resources\Orders\Pages\EditOrder;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
-use App\Filament\Resources\Orders\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Filament\Resources\Orders\Schemas\OrderInfolist;
 use App\Filament\Resources\Orders\Tables\OrdersTable;
@@ -56,9 +55,8 @@ class OrderResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            ItemsRelationManager::class,
-        ];
+        // Tabel item ditampilkan di ATAS halaman Lihat/Ubah (ala v1), bukan sbg relation manager bawah.
+        return [];
     }
 
     public static function getPages(): array

@@ -25,3 +25,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Cadangan (.mhbak) & berkas contoh bisnis nyata + kredensial lokal — jangan ter-commit
+*.mhbak
+/contoh/
+/contoh file/
+.claude/settings.local.json

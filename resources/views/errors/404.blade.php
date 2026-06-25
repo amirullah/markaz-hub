@@ -1,0 +1,5 @@
+@php($mkzTitle = 'Tidak Ditemukan')
+@php($mkzCode = '404')
+@php($mkzHeading = 'Halaman atau data tidak ditemukan')
+@php($mkzBody = 'Kemungkinan penyebab: data ini <b>bukan milik akun yang sedang login</b>, sudah dihapus, atau ID-nya berubah setelah pemulihan data (restore). Buka dari menu/daftar, bukan dari tautan lama atau dari akun lain.')
+@include('errors.mkz')

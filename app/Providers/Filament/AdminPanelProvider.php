@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->viteTheme('resources/css/filament/admin/theme.css')
             // SPA + prefetch: pindah menu via AJAX (tanpa reload penuh / unduh ulang aset);
             // hasPrefetching → halaman di-preload saat kursor mendekati menu, jadi saat
             // diklik terasa instan. Klik menu tak lagi loading beberapa detik.

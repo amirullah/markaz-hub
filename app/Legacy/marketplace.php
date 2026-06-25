@@ -89,15 +89,16 @@ const MP_COLUMNS = [
 
 // Kolom Laporan Penghasilan Tokopedia/TikTok (Seller Center gabungan),
 // sheet "Detail pesanan". Biaya bertanda negatif; uang bersih = penyelesaian.
+// Indonesia DAN Inggris (ekspor TikTok/Tokopedia bisa berbahasa Inggris).
 const MP_TIKTOK_INCOME = [
-    'externalNo'  => ['id pesanan/penyesuaian', 'order id', 'id pesanan'],
-    'txType'      => ['jenis transaksi'],
-    'orderDate'   => ['waktu pemesanan', 'waktu pembayaran pesanan'],
-    'revenue'     => ['total pendapatan'],
-    'net'         => ['jumlah penyelesaian pembayaran', 'jumlah penyelesaian pesanan'],
-    'totalFees'   => ['total biaya'],
-    'origValue'   => ['subtotal setelah diskon penjual', 'subtotal sebelum diskon'],
-    'refund'      => ['pengembalian dana pembeli', 'subtotal pengembalian dana setelah diskon penjual'],
+    'externalNo'  => ['id pesanan/penyesuaian', 'order/adjustment id', 'order id', 'id pesanan'],
+    'txType'      => ['jenis transaksi', 'type'],
+    'orderDate'   => ['waktu pemesanan', 'waktu pembayaran pesanan', 'order created time', 'order settled time'],
+    'revenue'     => ['total pendapatan', 'total revenue'],
+    'net'         => ['jumlah penyelesaian pembayaran', 'jumlah penyelesaian pesanan', 'total settlement amount'],
+    'totalFees'   => ['total biaya', 'total fees'],
+    'origValue'   => ['subtotal setelah diskon penjual', 'subtotal sebelum diskon', 'subtotal after seller discounts', 'subtotal before discounts', 'customer payment'],
+    'refund'      => ['pengembalian dana pembeli', 'subtotal pengembalian dana setelah diskon penjual', 'refund subtotal after seller discounts', 'customer refund'],
 ];
 
 // Kolom khusus Laporan Penghasilan Shopee (sheet "Income"). Biaya bertanda
@@ -539,7 +540,8 @@ function mp_tiktok_income_to_orders(array $assoc): array
     $orders = [];
     foreach ($assoc as $r) {
         $type = mp_pick($r, $C['txType']);
-        if ($type !== null && stripos($type, 'pesanan') === false) continue; // lewati Penyesuaian
+        // Lewati baris PENYESUAIAN/ADJUSTMENT; simpan baris pesanan ("Pesanan" ID / "Order" EN).
+        if ($type !== null && (stripos($type, 'penyesuaian') !== false || stripos($type, 'adjustment') !== false)) continue;
         $no = mp_pick($r, $C['externalNo']);
         if (!$no) continue;
         $revenue = mp_num(mp_pick($r, $C['revenue']));
@@ -631,9 +633,10 @@ function mp_read_file(string $path, string $origName = ''): array
         }
     }
 
-    // 4) Laporan Penghasilan Tokopedia/TikTok (sheet "Detail pesanan")?
+    // 4) Laporan Penghasilan Tokopedia/TikTok (sheet "Detail pesanan" / "Order details") — ID & EN.
     foreach ($sheets as $rows) {
         $hi = mp_header_index($rows, ['id pesanan/penyesuaian', 'total pendapatan'], 5);
+        if ($hi < 0) $hi = mp_header_index($rows, ['order/adjustment id', 'total revenue'], 5);
         if ($hi >= 0) {
             return ['type' => 'orders', 'orders' => mp_tiktok_income_to_orders(mp_assoc_rows($rows, $hi)), 'source' => 'tiktok_income', 'marketplace' => 'TIKTOKTOKO'];
         }

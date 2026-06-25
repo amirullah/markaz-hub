@@ -107,6 +107,35 @@ class Order extends Model
             });
     }
 
+    /**
+     * "Laba semu" (HPP kosong): pesanan SELF beromzet tapi modal/HPP masih 0 →
+     * laba terlihat besar padahal belum nyata. SUMBER TUNGGAL (dipakai kartu, Insight, filter).
+     */
+    public function scopeLabaSemu($query)
+    {
+        return $query->whereNotIn('status', ['CANCELLED', 'RETURNED'])
+            ->where('fulfillment', 'SELF')->where('product_revenue', '>', 0)->where('cogs', '<=', 0);
+    }
+
+    /**
+     * Pesanan JANGGAL (tak sinkron): biaya dropship-nya SUDAH ada (external_no
+     * tercatat di dropship_costs) TAPI pesanannya belum jadi dropship — persis
+     * kasus "data dropship sudah diupload tapi masih ada pesanan packing sendiri".
+     * Sinyal PRESISI (datanya sendiri yang bilang harusnya dropship), tanpa salah-tuduh.
+     */
+    public function scopeJanggal($query)
+    {
+        // Batal/retur dikecualikan: pesanan terminal tak berdampak laba & catatan dropship-nya
+        // bisa "basi" (dulu dropship, kini self) — bukan anomali yang perlu ditindak.
+        return $query->whereNotIn('status', ['CANCELLED', 'RETURNED'])
+            ->where('fulfillment', '!=', 'DROPSHIP')
+            ->whereExists(function ($q) {
+                $q->selectRaw('1')->from('dropship_costs as dc')
+                    ->whereColumn('dc.external_no', 'orders.external_no')
+                    ->whereColumn('dc.organization_id', 'orders.organization_id');
+            });
+    }
+
     /** Laba bersih (pakai sumber kebenaran tunggal ProfitService). */
     public function getProfitAttribute(): float
     {

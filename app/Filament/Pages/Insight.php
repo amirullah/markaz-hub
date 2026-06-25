@@ -32,7 +32,7 @@ class Insight extends Page
 
         $pesananRugi = Order::query()
             ->where('status', 'COMPLETED')
-            ->whereRaw("($profit) < -1")
+            ->whereRaw("($profit) < 0")
             ->orderByRaw("($profit) asc")
             ->limit(25)->get();
 
@@ -77,10 +77,38 @@ class Insight extends Page
         $rasioRetur = $totalPesanan > 0 ? round($jmlRetur / $totalPesanan * 100, 1) : 0;
         $jmlProdukRugi = $bawahModal->count();
 
+        // KENAPA rugi — 1 sebab dominan per pesanan (saling lepas, total = $jmlRugi).
+        $sb = (clone $selesai)->whereRaw("($profit) < 0")->selectRaw(
+            'SUM(CASE WHEN cogs > product_revenue THEN 1 ELSE 0 END) AS bawah_modal,'
+            . ' SUM(CASE WHEN NOT (cogs > product_revenue) AND product_revenue > 0 AND admin_fee / product_revenue > 0.3 THEN 1 ELSE 0 END) AS admin_tinggi,'
+            . ' SUM(CASE WHEN NOT (cogs > product_revenue) AND NOT (product_revenue > 0 AND admin_fee / product_revenue > 0.3) AND (voucher_seller_borne + shipping_cost_seller) > product_revenue * 0.2 THEN 1 ELSE 0 END) AS voucher_besar'
+        )->first();
+        $sebab = [
+            'bawahModal' => (int) ($sb->bawah_modal ?? 0),
+            'adminTinggi' => (int) ($sb->admin_tinggi ?? 0),
+            'voucherBesar' => (int) ($sb->voucher_besar ?? 0),
+        ];
+        $sebab['marginTipis'] = max(0, $jmlRugi - $sebab['bawahModal'] - $sebab['adminTinggi'] - $sebab['voucherBesar']);
+
+        // "Laba semu" (HPP kosong) — laba ter-overstate sampai HPP diimpor; dipakai utk tindakan.
+        $labaSemu = (int) Order::query()->labaSemu()->count();
+
+        // URL pintasan untuk tombol tindakan + kartu (filter auto-terpilih lewat URL).
+        $urlOrders = \App\Filament\Resources\Orders\OrderResource::getUrl('index');
+        $f = fn (array $filters): string => $urlOrders . '?' . http_build_query(['filters' => $filters]);
+        $urlLabaSemu = $f(['status_laba' => ['value' => 'laba_semu']]);
+        $urlSelesai = $f(['status' => ['values' => ['COMPLETED']]]);
+        $urlRugi = $f(['hasil_laba' => ['value' => 'rugi']]);
+        $urlRetur = $f(['status' => ['values' => ['RETURNED']]]);
+        $urlImpor = \App\Filament\Pages\ImportData::getUrl();
+        $urlProduk = \App\Filament\Resources\Products\ProductResource::getUrl('index');
+
         return compact(
             'pesananRugi', 'bawahModal', 'palingUntung', 'terlaris',
             'jmlRugi', 'nilaiRugi', 'jmlRetur', 'jmlBatal', 'rasioRetur', 'totalPesanan',
             'totalLaba', 'margin', 'jmlProdukRugi',
+            'sebab', 'labaSemu', 'urlOrders', 'urlLabaSemu', 'urlImpor', 'urlProduk',
+            'urlSelesai', 'urlRugi', 'urlRetur',
         );
     }
 

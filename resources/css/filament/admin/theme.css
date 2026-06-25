@@ -1,0 +1,100 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+/* === Filter: pill sekali-klik kecil & terpisah (ToggleButtons) === */
+.fi-fo-toggle-buttons.fi-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.fi-fo-toggle-buttons-btn-ctn .fi-btn {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    padding: 0.2rem 0.85rem;
+    min-height: 0;
+    height: auto;
+    border-radius: 9999px;
+    font-weight: 400;
+    box-shadow: none;
+}
+
+/* Dropdown filter (Toko/Status): sembunyikan SELURUH kolom label (bukan cuma
+   teksnya) agar celah grid 8px ikut hilang → dropdown SEJAJAR dengan pill.
+   Konteks tetap jelas dari placeholder "Semua ...". */
+.fi-ta-filters .fi-fo-select-wrp .fi-fo-field-label-col {
+    display: none;
+}
+
+/* Lebar dropdown dipangkas (tak perlu selebar tabel) */
+.fi-ta-filters .fi-fo-select-wrp {
+    max-width: 10rem;
+}
+
+/* Dropdown filter ramping & seragam dengan pill (tinggi ~pil, font kecil) */
+.fi-ta-filters .fi-fo-select-wrp .fi-select-input-btn,
+.fi-ta-filters .fi-fo-select-wrp select.fi-select-input {
+    min-height: 1.85rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+    font-size: 0.8rem;
+    box-shadow: none;
+}
+
+.fi-ta-filters .fi-fo-select-wrp select.fi-select-input {
+    height: 1.85rem;
+}
+
+/* Netralkan pemaksa tinggi 36px bawaan di dalam select searchable */
+.fi-ta-filters .fi-fo-select-wrp .fi-select-input > div,
+.fi-ta-filters .fi-fo-select-wrp .fi-select-input-btn {
+    min-height: 1.85rem;
+}
+
+.fi-ta-filters .fi-fo-select-wrp .fi-select-input-value-ctn,
+.fi-ta-filters .fi-fo-select-wrp .fi-select-input-placeholder {
+    font-size: 0.8rem;
+}
+
+/* Input tanggal (Dari/Sampai) ikut ramping & seragam dgn dropdown */
+.fi-ta-filters .fi-input-wrp {
+    min-height: 1.85rem;
+}
+
+.fi-ta-filters .fi-fo-date-time-picker-display-text-input,
+.fi-ta-filters .fi-input {
+    min-height: 1.85rem;
+    height: 1.85rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+    font-size: 0.8rem;
+}
+
+/* === Area unggah (seret file) lebih BESAR & jadi target drop yang luas === */
+.fi-fo-file-upload .filepond--root,
+.fi-fo-file-upload .filepond--drop-label,
+.fi-fo-file-upload .filepond--panel-root {
+    min-height: 9.5rem;
+}
+.fi-fo-file-upload .filepond--drop-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.fi-fo-file-upload .filepond--drop-label label {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* === Kartu ringkasan yang bisa diklik (atas tabel) — umpan-balik hover === */
+a.mkz-stat-card {
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+}
+a.mkz-stat-card:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.1);
+    transform: translateY(-1px);
+}

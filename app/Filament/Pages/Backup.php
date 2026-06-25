@@ -28,7 +28,7 @@ class Backup extends Page
     public function downloadAction(): Action
     {
         return Action::make('download')
-            ->label('Unduh Backup (.sql)')
+            ->label('Unduh Backup (.zip)')
             ->icon(Heroicon::OutlinedArrowDownTray)
             ->color('primary')
             ->extraAttributes(['class' => 'justify-center', 'style' => 'min-width:16rem'])
@@ -47,16 +47,24 @@ class Backup extends Page
                 ->modalSubmitActionLabel('Ganti & pulihkan sekarang')
                 ->schema([
                     FileUpload::make('file')
-                        ->label('File backup MarkazHub (.sql)')
+                        ->label('File backup MarkazHub (.json / .zip / .sql)')
                         ->storeFiles(false)
                         ->required()
-                        ->helperText('Hanya file .sql yang diunduh dari menu ini.')
+                        ->acceptedFileTypes([
+                            'application/json',
+                            'application/zip',
+                            'application/x-zip-compressed',
+                            'application/sql',
+                            'text/plain',
+                            'application/octet-stream',
+                        ])
+                        ->helperText('File .json (baru), atau .zip / .sql dari unduhan lama menu ini.')
                         ->rules([
                             fn (): \Closure => function (string $attribute, $value, \Closure $fail): void {
                                 $f = is_array($value) ? ($value[0] ?? null) : $value;
                                 if ($f instanceof \Illuminate\Http\UploadedFile
-                                    && strtolower($f->getClientOriginalExtension()) !== 'sql') {
-                                    $fail('File harus berformat .sql (hasil backup MarkazHub).');
+                                    && ! in_array(strtolower($f->getClientOriginalExtension()), ['json', 'zip', 'sql'], true)) {
+                                    $fail('File harus .json, .zip, atau .sql (hasil backup MarkazHub).');
                                 }
                             },
                         ]),
@@ -102,12 +110,18 @@ class Backup extends Page
     protected function downloadBackup(): StreamedResponse
     {
         $orgId = (int) auth()->user()->organization_id;
-        $sql = app(BackupService::class)->sqlForOrg($orgId);
-        $name = 'markazhub-backup-' . now()->format('Ymd-His') . '.sql';
+        // ZIP (isi JSON) = format paling kecil (~15% ukuran). Catatan: antivirus reputasi
+        // (mis. McAfee GTI) menandai file unduhan unik apa pun secara reputasi — format
+        // tak memengaruhinya — jadi pilih yang paling ringkas untuk disimpan.
+        $zip = app(BackupService::class)->zipForOrg($orgId);
+        $name = 'markazhub-backup-' . now()->format('Ymd-His') . '.zip';
 
-        return response()->streamDownload(function () use ($sql) {
-            echo $sql;
-        }, $name, ['Content-Type' => 'application/sql']);
+        return response()->streamDownload(function () use ($zip) {
+            echo $zip;
+        }, $name, [
+            'Content-Type' => 'application/zip',
+            'Content-Length' => (string) strlen($zip),
+        ]);
     }
 
     protected function runRestore(array $data): void
@@ -121,7 +135,8 @@ class Backup extends Page
         }
 
         try {
-            $result = app(BackupService::class)->restoreFromSql(
+            // Terima .zip (JSON baru) maupun .sql (lama) — format dideteksi otomatis.
+            $result = app(BackupService::class)->restoreFromUpload(
                 (int) auth()->user()->organization_id,
                 (string) file_get_contents($file->getRealPath()),
             );

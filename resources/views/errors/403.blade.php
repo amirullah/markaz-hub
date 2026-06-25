@@ -1,0 +1,5 @@
+@php($mkzTitle = 'Tidak Diizinkan')
+@php($mkzCode = '403')
+@php($mkzHeading = 'Anda tidak punya akses')
+@php($mkzBody = 'Halaman atau data ini <b>bukan milik akun yang sedang login</b> (atau Anda tidak berwenang membukanya). Pastikan Anda masuk ke akun yang tepat.')
+@include('errors.mkz')
