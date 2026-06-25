@@ -24,6 +24,9 @@ class Laporan extends Page
     /** Tahun yang sedang dilihat untuk rincian bulanan. */
     public ?int $tahun = null;
 
+    /** Bulan (1-12) untuk rincian PER TOKO; null = sepanjang tahun. */
+    public ?int $bulan = null;
+
     public function mount(): void
     {
         $latest = Order::query()->max('order_date');
@@ -33,6 +36,11 @@ class Laporan extends Page
     public function pilihTahun(int $tahun): void
     {
         $this->tahun = $tahun;
+    }
+
+    public function pilihBulan(?int $bulan): void
+    {
+        $this->bulan = ($bulan >= 1 && $bulan <= 12) ? $bulan : null;
     }
 
     public function getViewData(): array
@@ -66,9 +74,13 @@ class Laporan extends Page
             ];
         }
 
-        // Rincian per TOKO untuk tahun terpilih (omzet/laba/jumlah), urut omzet terbesar.
+        // Rincian per TOKO untuk periode terpilih (sepanjang tahun, atau satu bulan), urut omzet terbesar.
         $stores = \App\Models\Store::query()->get()->keyBy('id');
-        $perToko = $ops()->whereYear('order_date', $this->tahun)
+        $perTokoQuery = $ops()->whereYear('order_date', $this->tahun);
+        if ($this->bulan) {
+            $perTokoQuery->whereMonth('order_date', $this->bulan);
+        }
+        $perToko = $perTokoQuery
             ->selectRaw('store_id, SUM(product_revenue + other_income) omzet, SUM(' . $pf . ') laba, COUNT(*) jml')
             ->groupBy('store_id')->get()
             ->map(function ($r) use ($stores): array {
@@ -86,10 +98,15 @@ class Laporan extends Page
             })
             ->sortByDesc('omzet')->values()->all();
 
+        // Nilai filter periode utk tautan baris per-toko: 'YYYY' (setahun) atau 'YYYY-MM' (sebulan).
+        $periodeValue = $this->bulan ? sprintf('%04d-%02d', $this->tahun, $this->bulan) : (string) $this->tahun;
+
         return [
             'tahunan' => $tahunan,
             'bulanan' => $bulanan,
             'perToko' => $perToko,
+            'bulan' => $this->bulan,
+            'periodeValue' => $periodeValue,
             'years' => $years,
             'tahun' => $this->tahun,
             'urlOrders' => \App\Filament\Resources\Orders\OrderResource::getUrl('index'),

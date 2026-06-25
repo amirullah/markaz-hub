@@ -55,6 +55,12 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 fn (): string => view('auth.google-button')->render(),
             )
+            // Teks select pada filter tabel (mis. daftar Toko + channel) sedikit lebih kecil
+            // agar ringkas & muat di kolom yang lebih lebar. Tak perlu rebuild tema.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<style>.fi-ta-filters .fi-fo-select,.fi-ta-filters .fi-fo-select [role="option"]{font-size:.8rem}</style>',
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

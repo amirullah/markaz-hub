@@ -86,6 +86,9 @@ class OrderImporter
             $dropshipMap = $this->persistedDropshipMap();
             $summary['orders'] = $this->importOrders($orders, $storeId, $storeMarketplace, $dropshipMap, ! empty($dropshipMap), 'SELF');
             $this->backfillHpp(); // isi HPP yang masih kosong untuk pesanan packing-sendiri dari katalog
+            // Estimasi biaya admin untuk pesanan yang BELUM ada Laporan Penghasilan-nya → laba langsung
+            // terhitung tepat setelah impor (tanpa perlu klik "Isi Estimasi Biaya Admin" manual).
+            app(\App\Services\AdminFeeEstimator::class)->applyToOrg($this->orgId);
         }
 
         return ['report' => $report, 'summary' => $summary];

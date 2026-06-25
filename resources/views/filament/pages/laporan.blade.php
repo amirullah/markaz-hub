@@ -8,12 +8,13 @@
         $totOmzet = collect($bulanan)->sum('omzet');
         $totLaba = collect($bulanan)->sum('laba');
         $totJml = collect($bulanan)->sum('jml');
-        // Tautan ke Pesanan terfilter: toko (multi-pilih: values[]) + tahun.
-        $urlTokoTahun = fn ($storeId) => $urlOrders . '?' . http_build_query(['filters' => [
+        // Tautan ke Pesanan terfilter: toko (multi-pilih: values[]) + periode (tahun 'YYYY' / bulan 'YYYY-MM').
+        $urlTokoPeriode = fn ($storeId) => $urlOrders . '?' . http_build_query(['filters' => [
             'store_id' => ['values' => [$storeId]],
-            'bulan_tahun' => ['value' => (string) $tahun],
+            'bulan_tahun' => ['value' => $periodeValue],
         ]]);
-        $urlTahunSaja = fn () => $urlOrders . '?' . http_build_query(['filters' => ['bulan_tahun' => ['value' => (string) $tahun]]]);
+        $urlPeriodeSaja = fn () => $urlOrders . '?' . http_build_query(['filters' => ['bulan_tahun' => ['value' => $periodeValue]]]);
+        $periodeLabel = $bulan ? ($namaBulan[$bulan] . ' ' . $tahun) : (string) $tahun;
         $chBadge = function ($mp) {
             $label = \App\Models\Store::channelLabel($mp);
             [$bg, $fg] = $mp === 'SHOPEE' ? ['#fef3c7', '#92400e'] : ['#dcfce7', '#166534'];
@@ -76,10 +77,18 @@
         </div>
     </x-filament::section>
 
-    {{-- Laporan per toko (tahun terpilih) --}}
+    {{-- Laporan per toko (periode terpilih: setahun / sebulan) --}}
     <x-filament::section>
-        <x-slot name="heading">Laporan per Toko — {{ $tahun }}</x-slot>
-        <x-slot name="description">Omzet & laba tiap toko untuk tahun ini (channel ditampilkan di bawah nama). Klik baris untuk membuka pesanannya. Batal/retur tidak dihitung.</x-slot>
+        <x-slot name="heading">Laporan per Toko — {{ $periodeLabel }}</x-slot>
+        <x-slot name="description">Omzet & laba tiap toko untuk periode ini (channel di bawah nama). Pilih bulan untuk rincian per bulan. Klik baris untuk membuka pesanannya. Batal/retur tidak dihitung.</x-slot>
+        {{-- Pemilih bulan (khusus laporan per-toko) --}}
+        <div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin-bottom:.75rem">
+            <span style="font-size:.78rem;color:#64748b;font-weight:600;margin-right:.15rem">Bulan:</span>
+            <button type="button" wire:click="pilihBulan(null)" style="border:1px solid {{ $bulan === null ? '#2563eb' : '#e8edf3' }};background:{{ $bulan === null ? '#2563eb' : '#fff' }};color:{{ $bulan === null ? '#fff' : '#0f172a' }};border-radius:9999px;padding:.18rem .7rem;font-size:.78rem;cursor:pointer">Setahun</button>
+            @foreach ($namaBulan as $mi => $mn)
+                <button type="button" wire:click="pilihBulan({{ $mi }})" style="border:1px solid {{ $bulan === $mi ? '#2563eb' : '#e8edf3' }};background:{{ $bulan === $mi ? '#2563eb' : '#fff' }};color:{{ $bulan === $mi ? '#fff' : '#0f172a' }};border-radius:9999px;padding:.18rem .6rem;font-size:.78rem;cursor:pointer">{{ \Illuminate\Support\Str::substr($mn, 0, 3) }}</button>
+            @endforeach
+        </div>
         <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse">
                 <thead><tr>
@@ -93,7 +102,7 @@
                 @forelse ($perToko as $t)
                     @php
                         $mg = $t['omzet'] > 0 ? round($t['laba'] / $t['omzet'] * 100, 1) : 0;
-                        $href = $t['store_id'] ? $urlTokoTahun($t['store_id']) : $urlTahunSaja();
+                        $href = $t['store_id'] ? $urlTokoPeriode($t['store_id']) : $urlPeriodeSaja();
                     @endphp
                     <tr onclick="window.location='{{ $href }}'" style="cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
                         <td style="{{ $td }}">
@@ -106,7 +115,7 @@
                         <td style="{{ $td }};text-align:right;color:{{ $mg < 0 ? '#dc2626' : '#64748b' }}">{{ $mg }}%</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" style="{{ $td }};text-align:center;color:#94a3b8">Belum ada pesanan tahun ini.</td></tr>
+                    <tr><td colspan="5" style="{{ $td }};text-align:center;color:#94a3b8">Belum ada pesanan untuk periode ini.</td></tr>
                 @endforelse
                 </tbody>
                 @if (count($perToko) > 0)

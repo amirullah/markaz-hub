@@ -26,6 +26,9 @@ class RiwayatPerubahan extends Page
         [
             'date' => '25 Juni 2026',
             'changes' => [
+                'Perbaikan PENTING: setelah impor Laporan Marketplace, estimasi biaya admin & laba kini LANGSUNG terhitung otomatis — tak perlu lagi menekan tombol "Isi Estimasi Biaya Admin" manual. (Dulu pesanan baru biayanya 0 sampai tombol itu ditekan, sehingga laba terlihat "belum dihitung".)',
+                'Laporan per Toko kini bisa dilihat PER BULAN: pilih bulan (atau "Setahun") di bagian Laporan per Toko untuk melihat omzet/laba tiap toko pada bulan itu.',
+                'Filter Toko di halaman Pesanan dibuat lebih lebar (muat nama + channel) dan teks daftar tokonya sedikit diperkecil agar ringkas.',
                 'Impor BEBAS URUTAN (ditegaskan): unggah Dropship atau Daftar Produk SEBELUM Laporan Marketplace pun aman — datanya tersimpan permanen & otomatis terpasang saat pesanannya menyusul (begitu juga sebaliknya). Notifikasi dropship diperjelas: dulu seolah data hilang bila pesanan belum ada, padahal biayanya tetap tersimpan.',
                 'Perbaikan: angka "Tarif efektif rata-rata" di halaman Pengaturan kini SAMA PERSIS dengan yang muncul di notifikasi setelah kalibrasi (dulu sedikit berbeda karena halaman memakai rata-rata kategori sederhana, sedangkan notifikasi memakai tarif efektif tertimbang-omzet dari Laporan Penghasilan — kini keduanya pakai sumber yang sama).',
                 'BARU — Laporan per Toko: di menu Laporan, lihat omzet, laba, dan margin SETIAP toko untuk tahun terpilih (channel ditampilkan); klik baris toko untuk membuka pesanannya.',

@@ -128,6 +128,7 @@ class OrdersTable
                     ->label('Toko')
                     ->placeholder('Semua toko')
                     ->multiple() // bisa pilih beberapa toko sekaligus (whereIn store_id)
+                    ->columnSpan(2) // lebih lebar agar nama toko + channel muat
                     // Label sertakan channel agar jelas toko ini dari mana, mis. "KlikStore — Shopee".
                     ->options(fn (): array => \App\Models\Store::query()->orderBy('name')->get()
                         ->mapWithKeys(fn (\App\Models\Store $s): array => [$s->id => $s->name . ' — ' . $s->channel_label])->all())
