@@ -22,6 +22,24 @@ class Store extends Model
         'self' => 'Packing sendiri saja',
     ];
 
+    /** Label channel/marketplace untuk tampilan (dropdown filter, laporan, badge) — SUMBER TUNGGAL. */
+    public const CHANNELS = [
+        'SHOPEE' => 'Shopee',
+        'TIKTOKTOKO' => 'Tokopedia/TikTok',
+        'TOKOPEDIA' => 'Tokopedia',
+        'TIKTOK' => 'TikTok',
+    ];
+
+    public static function channelLabel(?string $marketplace): string
+    {
+        return self::CHANNELS[$marketplace] ?? ($marketplace ?? '—');
+    }
+
+    public function getChannelLabelAttribute(): string
+    {
+        return static::channelLabel($this->marketplace);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->logFillable()->logOnlyDirty()->dontSubmitEmptyLogs()->useLogName('toko');

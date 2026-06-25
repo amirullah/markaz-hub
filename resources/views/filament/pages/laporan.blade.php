@@ -8,6 +8,20 @@
         $totOmzet = collect($bulanan)->sum('omzet');
         $totLaba = collect($bulanan)->sum('laba');
         $totJml = collect($bulanan)->sum('jml');
+        // Tautan ke Pesanan terfilter: toko (multi-pilih: values[]) + tahun.
+        $urlTokoTahun = fn ($storeId) => $urlOrders . '?' . http_build_query(['filters' => [
+            'store_id' => ['values' => [$storeId]],
+            'bulan_tahun' => ['value' => (string) $tahun],
+        ]]);
+        $urlTahunSaja = fn () => $urlOrders . '?' . http_build_query(['filters' => ['bulan_tahun' => ['value' => (string) $tahun]]]);
+        $chBadge = function ($mp) {
+            $label = \App\Models\Store::channelLabel($mp);
+            [$bg, $fg] = $mp === 'SHOPEE' ? ['#fef3c7', '#92400e'] : ['#dcfce7', '#166534'];
+            return '<span style="display:inline-block;font-size:10px;line-height:1.4;padding:1px 7px;border-radius:6px;background:' . $bg . ';color:' . $fg . '">' . e($label) . '</span>';
+        };
+        $totTokoOmzet = collect($perToko)->sum('omzet');
+        $totTokoLaba = collect($perToko)->sum('laba');
+        $totTokoJml = collect($perToko)->sum('jml');
     @endphp
 
     {{-- Pemilih tahun --}}
@@ -58,6 +72,52 @@
                     <td style="{{ $td }};border-top:2px solid #e8edf3;text-align:right;color:{{ $totLaba < 0 ? '#dc2626' : '#16a34a' }}">{{ $rp($totLaba) }}</td>
                     <td style="{{ $td }};border-top:2px solid #e8edf3;text-align:right">{{ $totOmzet > 0 ? round($totLaba / $totOmzet * 100, 1) : 0 }}%</td>
                 </tr></tfoot>
+            </table>
+        </div>
+    </x-filament::section>
+
+    {{-- Laporan per toko (tahun terpilih) --}}
+    <x-filament::section>
+        <x-slot name="heading">Laporan per Toko — {{ $tahun }}</x-slot>
+        <x-slot name="description">Omzet & laba tiap toko untuk tahun ini (channel ditampilkan di bawah nama). Klik baris untuk membuka pesanannya. Batal/retur tidak dihitung.</x-slot>
+        <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+                <thead><tr>
+                    <th style="{{ $th }}">Toko</th>
+                    <th style="{{ $th }};text-align:right">Pesanan</th>
+                    <th style="{{ $th }};text-align:right">Omzet</th>
+                    <th style="{{ $th }};text-align:right">Laba</th>
+                    <th style="{{ $th }};text-align:right">Margin</th>
+                </tr></thead>
+                <tbody>
+                @forelse ($perToko as $t)
+                    @php
+                        $mg = $t['omzet'] > 0 ? round($t['laba'] / $t['omzet'] * 100, 1) : 0;
+                        $href = $t['store_id'] ? $urlTokoTahun($t['store_id']) : $urlTahunSaja();
+                    @endphp
+                    <tr onclick="window.location='{{ $href }}'" style="cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                        <td style="{{ $td }}">
+                            <span style="font-weight:600">{{ $t['nama'] }}</span>
+                            <div style="margin-top:3px">{!! $chBadge($t['marketplace']) !!}</div>
+                        </td>
+                        <td style="{{ $td }};text-align:right;color:#64748b">{{ number_format($t['jml'], 0, ',', '.') }}</td>
+                        <td style="{{ $td }};text-align:right">{{ $rp($t['omzet']) }}</td>
+                        <td style="{{ $td }};text-align:right;font-weight:700;color:{{ $t['laba'] < 0 ? '#dc2626' : '#16a34a' }}">{{ $rp($t['laba']) }}</td>
+                        <td style="{{ $td }};text-align:right;color:{{ $mg < 0 ? '#dc2626' : '#64748b' }}">{{ $mg }}%</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" style="{{ $td }};text-align:center;color:#94a3b8">Belum ada pesanan tahun ini.</td></tr>
+                @endforelse
+                </tbody>
+                @if (count($perToko) > 0)
+                <tfoot><tr style="font-weight:800">
+                    <td style="{{ $td }};border-top:2px solid #e8edf3">Total {{ count($perToko) }} toko</td>
+                    <td style="{{ $td }};border-top:2px solid #e8edf3;text-align:right">{{ number_format($totTokoJml, 0, ',', '.') }}</td>
+                    <td style="{{ $td }};border-top:2px solid #e8edf3;text-align:right">{{ $rp($totTokoOmzet) }}</td>
+                    <td style="{{ $td }};border-top:2px solid #e8edf3;text-align:right;color:{{ $totTokoLaba < 0 ? '#dc2626' : '#16a34a' }}">{{ $rp($totTokoLaba) }}</td>
+                    <td style="{{ $td }};border-top:2px solid #e8edf3;text-align:right">{{ $totTokoOmzet > 0 ? round($totTokoLaba / $totTokoOmzet * 100, 1) : 0 }}%</td>
+                </tr></tfoot>
+                @endif
             </table>
         </div>
     </x-filament::section>

@@ -127,10 +127,11 @@ class OrdersTable
                 SelectFilter::make('store_id')
                     ->label('Toko')
                     ->placeholder('Semua toko')
-                    ->multiple() // bisa pilih beberapa toko sekaligus (whereIn)
-                    ->relationship('store', 'name')
-                    ->searchable()
-                    ->preload(),
+                    ->multiple() // bisa pilih beberapa toko sekaligus (whereIn store_id)
+                    // Label sertakan channel agar jelas toko ini dari mana, mis. "KlikStore — Shopee".
+                    ->options(fn (): array => \App\Models\Store::query()->orderBy('name')->get()
+                        ->mapWithKeys(fn (\App\Models\Store $s): array => [$s->id => $s->name . ' — ' . $s->channel_label])->all())
+                    ->searchable(),
                 SelectFilter::make('status')
                     ->label('Status')
                     ->placeholder('Semua status')

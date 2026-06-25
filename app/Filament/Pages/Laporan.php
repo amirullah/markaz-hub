@@ -66,9 +66,30 @@ class Laporan extends Page
             ];
         }
 
+        // Rincian per TOKO untuk tahun terpilih (omzet/laba/jumlah), urut omzet terbesar.
+        $stores = \App\Models\Store::query()->get()->keyBy('id');
+        $perToko = $ops()->whereYear('order_date', $this->tahun)
+            ->selectRaw('store_id, SUM(product_revenue + other_income) omzet, SUM(' . $pf . ') laba, COUNT(*) jml')
+            ->groupBy('store_id')->get()
+            ->map(function ($r) use ($stores): array {
+                $s = $r->store_id ? $stores->get($r->store_id) : null;
+
+                return [
+                    'store_id' => $r->store_id ? (int) $r->store_id : null,
+                    'nama' => $s?->name ?? 'Tanpa toko',
+                    'marketplace' => $s?->marketplace,
+                    'channel' => $s ? $s->channel_label : '—',
+                    'omzet' => (float) $r->omzet,
+                    'laba' => (float) $r->laba,
+                    'jml' => (int) $r->jml,
+                ];
+            })
+            ->sortByDesc('omzet')->values()->all();
+
         return [
             'tahunan' => $tahunan,
             'bulanan' => $bulanan,
+            'perToko' => $perToko,
             'years' => $years,
             'tahun' => $this->tahun,
             'urlOrders' => \App\Filament\Resources\Orders\OrderResource::getUrl('index'),

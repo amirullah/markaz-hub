@@ -14,10 +14,7 @@ class StoresTable
     /** Badge channel berwarna (oranye Shopee / hijau lainnya) — seragam dgn Pesanan. */
     private static function channelBadge(string $marketplace): \Illuminate\Support\HtmlString
     {
-        $label = match ($marketplace) {
-            'SHOPEE' => 'Shopee', 'TIKTOKTOKO' => 'Tokopedia/TikTok',
-            'TOKOPEDIA' => 'Tokopedia', 'TIKTOK' => 'TikTok', default => $marketplace,
-        };
+        $label = \App\Models\Store::channelLabel($marketplace);
         [$bg, $fg] = $marketplace === 'SHOPEE' ? ['#fef3c7', '#92400e'] : ['#dcfce7', '#166534'];
 
         return new \Illuminate\Support\HtmlString(

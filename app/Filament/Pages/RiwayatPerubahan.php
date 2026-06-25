@@ -26,6 +26,8 @@ class RiwayatPerubahan extends Page
         [
             'date' => '25 Juni 2026',
             'changes' => [
+                'BARU — Laporan per Toko: di menu Laporan, lihat omzet, laba, dan margin SETIAP toko untuk tahun terpilih (channel ditampilkan); klik baris toko untuk membuka pesanannya.',
+                'Filter Toko di halaman Pesanan kini menampilkan channel tiap toko (nama toko diikuti "— Shopee" atau "— Tokopedia/TikTok") agar tak tertukar saat memilih.',
                 'Halaman Pesanan lebih lengkap: filter Periode cepat (Bulan ini / 30 hari / 90 hari / Tahun ini) plus rentang tanggal sendiri, dan kini bisa pilih BEBERAPA toko & BEBERAPA status sekaligus (mis. Dibatalkan + Dikirim). Tiap baris ringkas dua baris, klik baris untuk membuka pesanan, kolom Margin % bisa diurutkan, pencarian ikut nama pembeli.',
                 'Halaman Produk dirapikan: klik baris untuk mengubah produk, kolom (Modal/Kategori/Admin %) bisa diurutkan, plus filter lengkap — Supplier, Kategori, Aktif/Nonaktif, harga pernah berubah, rentang modal, dan rentang tanggal harga diubah.',
                 'Halaman detail/ubah Pesanan ditata ulang 2 kolom: rincian produk di kiri dan panel "Ringkasan Laba" di kanan yang menghitung laba langsung saat diubah — lengkap dengan judul No. Pesanan, info toko/tanggal/pembeli, dan tombol Kembali.',
