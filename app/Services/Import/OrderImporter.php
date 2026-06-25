@@ -172,7 +172,7 @@ class OrderImporter
      * Impor file KATALOG GENERIK (CSV/XLSX) dari sumber apa pun + supplier pilihan.
      * Cari-atau-buat supplier berdasarkan nama (org-scoped). Mengembalikan ringkasan.
      */
-    public function importCatalogFile(string $path, string $name, string $supplierName, bool $isDropship, bool $updateOldHpp = false): array
+    public function importCatalogFile(string $path, string $name, string $supplierName, bool $isDropship, bool $updateOldHpp = false, bool $updateOldHppDated = false): array
     {
         $products = mp_generic_catalog($path, $name);
         if (! $products) {
@@ -196,7 +196,12 @@ class OrderImporter
         }
         [$ins, $upd, $changes, $skippedOld] = $this->importCatalog($products, (int) $supId, $isDropship);
         $hppOrders = $this->backfillHpp();
-        if ($updateOldHpp) $hppOrders += $this->recomputeHpp(null);
+        // Dated: HPP pesanan lama disesuaikan per TANGGAL (riwayat harga). Current: disamakan ke harga terkini.
+        if ($updateOldHppDated) {
+            $hppOrders += $this->recomputeHpp(null, true);
+        } elseif ($updateOldHpp) {
+            $hppOrders += $this->recomputeHpp(null, false);
+        }
         return ['ok' => true, 'read' => count($products), 'ins' => $ins, 'upd' => $upd,
             'changes' => count($changes), 'skipped' => $skippedOld, 'hpp_orders' => $hppOrders, 'supplier' => $supName];
     }
@@ -329,13 +334,19 @@ class OrderImporter
         return max(0, $before - $after);
     }
 
-    /** Hitung ULANG HPP (menimpa) — hanya bila user memilih, boleh dibatasi tanggal. */
-    public function recomputeHpp(?string $since = null): int
+    /**
+     * Hitung ULANG HPP (menimpa) — hanya bila user memilih, boleh dibatasi tanggal.
+     * $historical=true: HPP = harga modal yang BERLAKU saat TANGGAL pesanan (dari riwayat harga;
+     * tepat untuk perubahan harga mundur/backdated). $historical=false: SAMAKAN semua pesanan ke
+     * harga modal TERKINI (abaikan tanggal).
+     */
+    public function recomputeHpp(?string $since = null, bool $historical = true): int
     {
         $cond = "o.organization_id = ? AND o.status NOT IN ('CANCELLED','RETURNED') AND o.fulfillment='SELF' AND o.deleted_at IS NULL"
             . ($since ? " AND o.order_date >= " . DB::getPdo()->quote($since) : '');
+        $costExpr = $historical ? $this->histCostExpr() : 'p.cost_price';
         DB::statement("UPDATE order_items i JOIN orders o ON o.id=i.order_id JOIN products p ON p.sku=i.sku AND p.organization_id=o.organization_id
-            SET i.unit_cost=" . $this->histCostExpr() . " WHERE $cond", [$this->orgId]);
+            SET i.unit_cost=$costExpr WHERE $cond", [$this->orgId]);
         return DB::update("UPDATE orders o SET o.cogs=COALESCE((SELECT SUM(i.unit_cost*i.qty) FROM order_items i WHERE i.order_id=o.id),0) WHERE $cond", [$this->orgId]);
     }
 

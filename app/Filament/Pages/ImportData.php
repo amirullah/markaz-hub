@@ -112,9 +112,12 @@ class ImportData extends Page
                     ->default('Stok Sendiri')
                     ->required()
                     ->helperText('Mis. "Stok Sendiri", "Supplier A". Dibuat otomatis jika belum ada.'),
+                Toggle::make('update_old_hpp_dated')
+                    ->label('Sesuaikan HPP pesanan lama SESUAI TANGGAL pesanan (pakai riwayat harga)')
+                    ->helperText('Pilih bila file memuat perubahan harga ber-tanggal LAMPAU (mundur/backdated): tiap pesanan lama dihitung ulang memakai harga modal yang BERLAKU saat tanggalnya. Paling akurat. (HPP yang diedit manual akan tertimpa.)'),
                 Toggle::make('update_old_hpp')
-                    ->label('Perbarui juga harga modal pesanan lama dengan harga baru ini')
-                    ->helperText('Default: pesanan lama tetap memakai harga modal saat itu (riwayat terjaga).'),
+                    ->label('Atau: samakan SEMUA HPP pesanan lama dengan harga modal TERBARU ini')
+                    ->helperText('Timpa HPP semua pesanan lama dengan harga terkini, ABAIKAN tanggal. Jarang dibutuhkan. Default (keduanya mati): HPP pesanan lama tidak diubah, hanya yang belum terisi.'),
             ])
             ->action(fn (array $data) => $this->runCatalogImport($data));
     }
@@ -247,6 +250,7 @@ class ImportData extends Page
             (string) ($data['supplier_name'] ?? ''),
             false, // bukan dropship — dropship punya menu sendiri
             (bool) ($data['update_old_hpp'] ?? false),
+            (bool) ($data['update_old_hpp_dated'] ?? false),
         );
 
         if (! ($res['ok'] ?? false)) {
