@@ -105,14 +105,16 @@ class AdminFeeEstimator
     }
 
     /**
-     * KALIBRASI tarif dari data NYATA: untuk pesanan yang sudah punya Laporan Penghasilan
-     * (income_verified, biaya asli), hitung tarif biaya EFEKTIF (admin_fee/omzet) lalu
-     * tulis ke tarif per kategori. Tarif kategori jadi tarif ALL-IN (komisi + biaya layanan +
-     * komisi dinamis sudah termasuk), maka komponen tambahan (service/dynamic) DINOLKAN agar
-     * tak dobel. Per-kategori dipakai bila datanya cukup (single-kategori ≥ $minOrders), selain
-     * itu pakai rata-rata channel. Hanya pesanan COMPLETED beromzet & berbiaya yang dipakai.
+     * Tarif biaya EFEKTIF per channel (%) dari pesanan ber-Laporan Penghasilan, TERTIMBANG OMZET:
+     * (Σadmin_fee − Rp1.250×n) / Σproduct_revenue × 100. UTAMAKAN data N bulan terakhir
+     * (fallback semua data bila < $minOrders pesanan). null bila belum ada data.
+     *
+     * SUMBER TUNGGAL angka "Tarif efektif rata-rata" — dipakai notifikasi kalibrasi DAN halaman
+     * Pengaturan, agar keduanya selalu sama. Mengembalikan nilai MENTAH (belum dibulatkan).
+     *
+     * @return array{SHOPEE: float|null, TIKTOKTOKO: float|null}
      */
-    public function calibrateFromIncome(int $orgId, int $minOrders = 30): array
+    public function effectiveChannelRates(int $orgId, int $minOrders = 30): array
     {
         $verified = fn (string $ch) => Order::withoutGlobalScopes()
             ->where('organization_id', $orgId)->where('income_verified', true)
@@ -124,13 +126,29 @@ class AdminFeeEstimator
         $rateOf = fn ($row) => ($row && $row->n > 0 && $row->rev > 0)
             ? max(0.0, ($row->fee - self::ORDER_PROCESSING_FEE * $row->n) / $row->rev * 100) : null;
 
-        // Rata-rata tarif variabel per channel — UTAMAKAN data terbaru; fallback semua data bila < minOrders.
-        $channelRate = [];
+        $rates = [];
         foreach (['SHOPEE', 'TIKTOKTOKO'] as $ch) {
             $recent = $verified($ch)->where('order_date', '>=', $recentSince)->selectRaw($aggSql)->first();
             $use = ($recent && $recent->n >= $minOrders) ? $recent : $verified($ch)->selectRaw($aggSql)->first();
-            $channelRate[$ch] = $rateOf($use);
+            $rates[$ch] = $rateOf($use);
         }
+
+        return $rates;
+    }
+
+    /**
+     * KALIBRASI tarif dari data NYATA: untuk pesanan yang sudah punya Laporan Penghasilan
+     * (income_verified, biaya asli), hitung tarif biaya EFEKTIF (admin_fee/omzet) lalu
+     * tulis ke tarif per kategori. Tarif kategori jadi tarif ALL-IN (komisi + biaya layanan +
+     * komisi dinamis sudah termasuk), maka komponen tambahan (service/dynamic) DINOLKAN agar
+     * tak dobel. Per-kategori dipakai bila datanya cukup (single-kategori ≥ $minOrders), selain
+     * itu pakai rata-rata channel. Hanya pesanan COMPLETED beromzet & berbiaya yang dipakai.
+     */
+    public function calibrateFromIncome(int $orgId, int $minOrders = 30): array
+    {
+        // Tarif efektif per channel — SUMBER TUNGGAL (sama persis dgn yang ditampilkan halaman Pengaturan).
+        $channelRate = $this->effectiveChannelRates($orgId, $minOrders);
+        $recentSince = now()->subMonths(self::CALIBRATION_RECENT_MONTHS)->toDateString(); // dipakai per-kategori di bawah
 
         // Belum ada data Laporan Penghasilan sama sekali → JANGAN ubah apa pun (no-op aman).
         if (($channelRate['SHOPEE'] ?? null) === null && ($channelRate['TIKTOKTOKO'] ?? null) === null) {

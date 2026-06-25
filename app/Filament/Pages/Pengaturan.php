@@ -28,10 +28,16 @@ class Pengaturan extends Page
     {
         $orgId = (int) auth()->user()->organization_id;
 
+        // Tampilkan tarif EFEKTIF channel yang SAMA dgn notifikasi kalibrasi (tertimbang omzet dari
+        // Laporan Penghasilan). Fallback rata-rata tarif kategori bila belum ada data laporan.
+        $rates = app(AdminFeeEstimator::class)->effectiveChannelRates($orgId);
+        $catAvg = fn (string $col): float => round((float) \App\Models\Category::withoutGlobalScopes()
+            ->where('organization_id', $orgId)->avg($col), 2);
+
         return [
             'org' => Organization::find($orgId),
-            'avgShopee' => round((float) \App\Models\Category::withoutGlobalScopes()->where('organization_id', $orgId)->avg('fee_shopee'), 2),
-            'avgToko' => round((float) \App\Models\Category::withoutGlobalScopes()->where('organization_id', $orgId)->avg('fee_tokotiktok'), 2),
+            'avgShopee' => $rates['SHOPEE'] !== null ? round($rates['SHOPEE'], 2) : $catAvg('fee_shopee'),
+            'avgToko' => $rates['TIKTOKTOKO'] !== null ? round($rates['TIKTOKTOKO'], 2) : $catAvg('fee_tokotiktok'),
         ];
     }
 

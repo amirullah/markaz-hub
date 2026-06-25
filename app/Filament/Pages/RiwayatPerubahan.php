@@ -26,6 +26,7 @@ class RiwayatPerubahan extends Page
         [
             'date' => '25 Juni 2026',
             'changes' => [
+                'Perbaikan: angka "Tarif efektif rata-rata" di halaman Pengaturan kini SAMA PERSIS dengan yang muncul di notifikasi setelah kalibrasi (dulu sedikit berbeda karena halaman memakai rata-rata kategori sederhana, sedangkan notifikasi memakai tarif efektif tertimbang-omzet dari Laporan Penghasilan — kini keduanya pakai sumber yang sama).',
                 'BARU — Laporan per Toko: di menu Laporan, lihat omzet, laba, dan margin SETIAP toko untuk tahun terpilih (channel ditampilkan); klik baris toko untuk membuka pesanannya.',
                 'Filter Toko di halaman Pesanan kini menampilkan channel tiap toko (nama toko diikuti "— Shopee" atau "— Tokopedia/TikTok") agar tak tertukar saat memilih.',
                 'Halaman Pesanan lebih lengkap: filter Periode cepat (Bulan ini / 30 hari / 90 hari / Tahun ini) plus rentang tanggal sendiri, dan kini bisa pilih BEBERAPA toko & BEBERAPA status sekaligus (mis. Dibatalkan + Dikirim). Tiap baris ringkas dua baris, klik baris untuk membuka pesanan, kolom Margin % bisa diurutkan, pencarian ikut nama pembeli.',
