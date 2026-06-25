@@ -315,8 +315,10 @@ class OrderImporter
      */
     private function histCostExpr(): string
     {
+        // Banding per-TANGGAL (DATE) agar IDENTIK dgn costAt() PHP (yang juga pakai tanggal saja) —
+        // hindari beda hasil di hari yang sama akibat komponen jam. Tie tanggal sama → harga changed_at terbaru.
         return 'COALESCE('
-            . '(SELECT ppc.new_price FROM product_price_changes ppc WHERE ppc.sku = i.sku AND ppc.organization_id = o.organization_id AND ppc.changed_at <= o.order_date ORDER BY ppc.changed_at DESC, ppc.id DESC LIMIT 1),'
+            . '(SELECT ppc.new_price FROM product_price_changes ppc WHERE ppc.sku = i.sku AND ppc.organization_id = o.organization_id AND DATE(ppc.changed_at) <= DATE(o.order_date) ORDER BY ppc.changed_at DESC, ppc.id DESC LIMIT 1),'
             . '(SELECT ppc2.new_price FROM product_price_changes ppc2 WHERE ppc2.sku = i.sku AND ppc2.organization_id = o.organization_id ORDER BY ppc2.changed_at ASC, ppc2.id ASC LIMIT 1),'
             . 'p.cost_price)';
     }

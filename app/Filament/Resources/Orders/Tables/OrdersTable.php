@@ -444,7 +444,9 @@ class OrdersTable
             'final' => $aktif($q)->where('income_verified', true)->whereNot($dataGap)->whereNot($belumCair),
             'laba_semu' => $q->labaSemu(), // SELF, omzet>0, HPP kosong (cocok kartu "Laba Semu")
             'perlu_data' => $aktif($q)->where($dataGap),
-            'belum_cair' => $aktif($q)->where($belumCair),
+            // "Belum cair" hanya bila settlement satu-satunya kekurangan (cermin prioritas statusLaba():
+            // bila ada gap HPP/dropship, labelnya "Perlu data"). Sejalan dgn cabang 'final'.
+            'belum_cair' => $aktif($q)->where($belumCair)->whereNot($dataGap),
             'estimasi' => $aktif($q)->where('income_verified', false)->whereNot($dataGap),
             // "Belum final" = gabungan perlu_data + estimasi + belum_cair (laba belum pasti).
             'belum_final' => $aktif($q)->where(fn (Builder $q) => $q->where($dataGap)->orWhere('income_verified', false)->orWhere($belumCair)),
