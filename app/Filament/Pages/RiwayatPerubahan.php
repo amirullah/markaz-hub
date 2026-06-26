@@ -26,6 +26,7 @@ class RiwayatPerubahan extends Page
         [
             'date' => '26 Juni 2026',
             'changes' => [
+                'Tombol "Salin No. Pesanan": untuk hasil yang SANGAT BANYAK (mis. tanpa filter, ribuan pesanan) kini otomatis DIUNDUH sebagai file .txt — clipboard tak andal untuk teks raksasa, sebelumnya jadi "tak tersalin". Untuk hasil sedikit tetap disalin ke clipboard seperti biasa.',
                 'Tabel Pesanan: tombol "Salin semua No. Pesanan" di header tabel — sekali klik menyalin SEMUA nomor pesanan sesuai filter aktif (tak perlu mencentang satu per satu), siap tempel ke Excel/teks (satu per baris). Berguna mis. mengumpulkan nomor pesanan yang butuh File Pesanan untuk diunduh ulang. (Tombol lama "Salin No. Pesanan" via centang baris tetap ada untuk pilih sebagian.)',
                 'Perbaikan impor: baris HEADER/LEGENDA dari file marketplace (mis. "Platform unique order ID.") tak lagi keimpor jadi "pesanan" — importer kini melewati baris yang nomor pesanannya kosong atau mengandung spasi (nomor pesanan asli tak pernah berspasi). Pesanan sampah yang sudah terlanjur masuk juga dibersihkan.',
                 'Link "Lihat pesanan" di panel "File yang perlu diupload" kini menampilkan pesanan PERSIS sesuai jumlah di tiap baris (sebelumnya bisa beda karena pakai filter perkiraan). Caranya: filter tersembunyi "saran" yang meniru query tepat tiap kategori (income belum diverifikasi / tanpa rincian item / HPP kosong tapi produk ada / kurang data dropship). Butir "Daftar Produk (HPP)" pun kini punya link.',
