@@ -385,7 +385,12 @@ class OrderImporter
         // Pass 1: merge dgn pesanan lama (per org, lintas toko) + kumpulkan ID Produk.
         $prepared = []; $mpIds = [];
         foreach ($orders as $o) {
-            $o['externalNo'] = (string) $o['externalNo'];
+            $o['externalNo'] = trim((string) ($o['externalNo'] ?? ''));
+            // Lewati baris HEADER/LEGENDA yang lolos parser (mis. "Platform unique order ID.") —
+            // nomor pesanan asli TIDAK PERNAH mengandung spasi.
+            if ($o['externalNo'] === '' || preg_match('/\s/u', $o['externalNo'])) {
+                continue;
+            }
             $ex = DB::table('orders')->where('organization_id', $org)->where('external_no', $o['externalNo'])->first();
             $exItems = $ex ? DB::table('order_items')->where('order_id', $ex->id)->get()->map(fn ($r) => (array) $r)->all() : [];
             if ($ex) $o = mp_merge_orders([[$this->orderRowToNorm((array) $ex, $exItems)], [$o]])[0];
