@@ -33,7 +33,7 @@ class CopyBulkAction
             ->icon('heroicon-o-clipboard-document')
             ->color('gray')
             ->deselectRecordsAfterCompletion()
-            ->action(function (Collection $records, $livewire) use ($extract, $satuan, $emptyHint): void {
+            ->action(function (Collection $records, $livewire) use ($extract, $satuan, $emptyHint) {
                 $vals = ($extract instanceof \Closure
                     ? Collection::wrap($extract($records))
                     : $records->pluck($extract))
@@ -46,7 +46,20 @@ class CopyBulkAction
                         ->warning()
                         ->send();
 
-                    return;
+                    return null;
+                }
+
+                // Terlalu banyak utk clipboard → unduh sebagai file .txt (selalu berhasil).
+                if ($vals->count() > 2000) {
+                    Notification::make()
+                        ->title($vals->count() . ' ' . $satuan . ' — terlalu banyak untuk clipboard')
+                        ->body('Diunduh sebagai file .txt (satu nilai per baris).')
+                        ->info()
+                        ->send();
+
+                    return response()->streamDownload(function () use ($vals): void {
+                        echo $vals->implode("\n");
+                    }, \Illuminate\Support\Str::slug($satuan) . '-' . now()->format('Ymd-His') . '.txt', ['Content-Type' => 'text/plain; charset=utf-8']);
                 }
 
                 $livewire->js(self::clipboardJs($vals->implode("\n")));
@@ -56,6 +69,8 @@ class CopyBulkAction
                     ->body('Tempel (Ctrl+V) di Excel/teks — satu per baris.')
                     ->success()
                     ->send();
+
+                return null;
             });
     }
 }

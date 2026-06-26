@@ -328,9 +328,12 @@ class OrdersTable
             ->deferFilters(false)
             // Klik baris → Lihat. No. Pesanan dikecualikan (->disabledClick di kolomnya) agar bisa DISALIN, bukan navigasi.
             ->recordUrl(fn (\App\Models\Order $record): string => \App\Filament\Resources\Orders\OrderResource::getUrl('view', ['record' => $record]))
+            // Opsi jumlah per halaman lebih besar → mudah centang banyak sekaligus. Untuk memilih
+            // SEMUA hasil filter (lintas halaman), centang kotak header lalu klik "Pilih semua".
+            ->paginated([25, 50, 100, 250])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    \App\Filament\Actions\CopyBulkAction::make('salinNoPesanan', 'Salin No. (terpilih)', 'external_no', 'No. Pesanan'),
+                    \App\Filament\Actions\CopyBulkAction::make('salinNoPesanan', 'Salin No. Pesanan', 'external_no', 'No. Pesanan'),
                     \App\Filament\Actions\CopyBulkAction::make('salinSkuPesanan', 'Salin SKU Produk', fn ($records) => \App\Models\OrderItem::query()->whereIn('order_id', $records->pluck('id'))->pluck('sku'), 'SKU', 'Pesanan terpilih belum punya rincian produk. Impor "File Pesanan" untuk pesanan tersebut dulu agar SKU-nya tersedia.'),
                     DeleteBulkAction::make(),
                 ]),
