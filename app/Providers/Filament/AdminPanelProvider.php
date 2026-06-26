@@ -61,6 +61,15 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<style>.fi-ta-filters .fi-fo-select,.fi-ta-filters .fi-fo-select [role="option"]{font-size:.8rem}</style>',
             )
+            // Tombol "Salin No. Pesanan" tepat di KIRI kotak Cari pada daftar Pesanan
+            // (memanggil ListOrders::salinNoPesanan). Hook resmi tables::toolbar.search.before.
+            ->renderHook(
+                \Filament\Tables\View\TablesRenderHook::TOOLBAR_SEARCH_BEFORE,
+                fn (): string => \Illuminate\Support\Facades\Blade::render(
+                    '<x-filament::button wire:click="salinNoPesanan" wire:loading.attr="disabled" icon="heroicon-o-clipboard-document" color="gray" size="sm">Salin No. Pesanan</x-filament::button>'
+                ),
+                scopes: \App\Filament\Resources\Orders\Pages\ListOrders::class,
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

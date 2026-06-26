@@ -93,6 +93,38 @@ class ListOrders extends ListRecords
         return false;
     }
 
+    /**
+     * Salin/unduh SEMUA No. Pesanan sesuai filter aktif. Dipanggil tombol di KIRI kotak Cari
+     * (disisipkan via render hook tables::toolbar.search.before di AdminPanelProvider).
+     * Hasil sedikit → clipboard; banyak (>2000, mis. tanpa filter) → unduh .txt (clipboard tak andal).
+     */
+    public function salinNoPesanan()
+    {
+        $nos = $this->getFilteredTableQuery()->reorder()->pluck('external_no')->filter()->unique()->values();
+        if ($nos->isEmpty()) {
+            Notification::make()->title('Tidak ada pesanan untuk disalin')->warning()->send();
+
+            return null;
+        }
+        if ($nos->count() > 2000) {
+            Notification::make()
+                ->title($nos->count() . ' No. Pesanan — terlalu banyak untuk clipboard')
+                ->body('Diunduh sebagai file .txt (satu nomor per baris). Tip: pilih filter dulu agar bisa langsung disalin.')
+                ->info()->send();
+
+            return response()->streamDownload(function () use ($nos): void {
+                echo $nos->implode("\n");
+            }, 'no-pesanan-' . now()->format('Ymd-His') . '.txt', ['Content-Type' => 'text/plain; charset=utf-8']);
+        }
+        $this->js(\App\Filament\Actions\CopyBulkAction::clipboardJs($nos->implode("\n")));
+        Notification::make()
+            ->title($nos->count() . ' No. Pesanan disalin')
+            ->body('Tempel (Ctrl+V) di Excel/teks — satu per baris.')
+            ->success()->send();
+
+        return null;
+    }
+
     // Pesanan masuk lewat Import (tanpa tombol "Buat"). Aksi: isi estimasi biaya admin.
     protected function getHeaderActions(): array
     {
