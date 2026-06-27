@@ -52,7 +52,7 @@ Jualan ramai, tapi **untungnya berapa, sih?** Laporan marketplace berserakan di 
 ## 🛠️ Menjalankan secara lokal
 
 ```bash
-git clone <repo-url> && cd markazhub-v2
+git clone https://github.com/amirullah/markaz-hub.git && cd markaz-hub
 composer install
 cp .env.example .env && php artisan key:generate
 # atur koneksi database di .env
