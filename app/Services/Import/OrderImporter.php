@@ -43,6 +43,15 @@ class OrderImporter
         ];
         $report = []; $orderSources = []; $orderFiles = [];
 
+        // Cegah dua impor BERSAMAAN untuk org yang sama: dedup pesanan bersifat read-then-write,
+        // impor paralel bisa saling tindih (duplikat/tabrakan unique). Lock otomatis lepas saat
+        // koneksi DB ditutup di akhir request — aman walau proses error di tengah.
+        $lockName = 'mh_import_org_' . $this->orgId;
+        if (! (int) (DB::selectOne('SELECT GET_LOCK(?, 0) AS l', [$lockName])->l ?? 0)) {
+            return ['report' => [['name' => 'Semua file', 'ok' => false,
+                'reason' => 'Impor lain sedang berjalan untuk akun ini. Tunggu sampai selesai, lalu coba lagi.']], 'summary' => []];
+        }
+
         foreach ($files as $f) {
             $name = $f['name']; $res = mp_read_file($f['path'], $name);
             $label = $srcLabel[$res['source'] ?? ''] ?? 'File';
@@ -90,6 +99,8 @@ class OrderImporter
             // terhitung tepat setelah impor (tanpa perlu klik "Isi Estimasi Biaya Admin" manual).
             app(\App\Services\AdminFeeEstimator::class)->applyToOrg($this->orgId);
         }
+
+        DB::selectOne('SELECT RELEASE_LOCK(?) AS r', [$lockName]);
 
         return ['report' => $report, 'summary' => $summary];
     }
@@ -520,7 +531,9 @@ class OrderImporter
                     && $r($ex['cogs']) === $r($cogs) && $r($ex['dropship_cost']) === $r($dropship)
                     && $r($ex['dropship_modal'] ?? 0) === $r($dropshipModal)
                     && $r($ex['other_cost']) === $r($otherCost) && $r($ex['voucher_seller_borne']) === $r($voucher)
-                    && count($exItems) === count($items) && $exSku === $newSku && $exQty === $newQty;
+                    && count($exItems) === count($items) && $exSku === $newSku && $exQty === $newQty
+                    // Pesanan ter-soft-delete TIDAK boleh dianggap "sama" — harus lanjut ke UPDATE agar dipulihkan.
+                    && empty($ex['deleted_at']);
                 if ($same) { $unchanged++; continue; }
             }
 
@@ -532,6 +545,10 @@ class OrderImporter
                     'cogs' => $cogs, 'admin_fee' => $adminFee, 'shipping_cost_seller' => $shipSeller,
                     'voucher_seller_borne' => $voucher, 'dropship_cost' => $dropship, 'dropship_modal' => $dropshipModal, 'other_cost' => $otherCost,
                     'income_verified' => $verified, 'note' => $note, 'updated_at' => now(),
+                    // Re-impor MEMULIHKAN pesanan yang pernah dihapus (soft delete): lookup dedup di atas
+                    // memakai DB::table (tanpa filter deleted_at), jadi tanpa reset ini baris trashed
+                    // di-update diam-diam tapi tetap tersembunyi dari semua laporan.
+                    'deleted_at' => null,
                 ];
                 if ($ex) {
                     DB::table('orders')->where('id', $ex['id'])->update($data);

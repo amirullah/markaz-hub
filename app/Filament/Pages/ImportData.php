@@ -22,11 +22,11 @@ class ImportData extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowDownTray;
 
-    protected static ?string $navigationLabel = 'Import';
+    protected static ?string $navigationLabel = 'Impor Data';
 
     protected static ?string $title = 'Impor Data';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     /** Hasil import per file (ditampilkan di view). */
     public ?array $report = null;
@@ -205,7 +205,17 @@ class ImportData extends Page
             return;
         }
 
-        $result = (new OrderImporter((int) $store->organization_id))->importFiles($files, (int) $store->id, $store->marketplace);
+        try {
+            $result = (new OrderImporter((int) $store->organization_id))->importFiles($files, (int) $store->id, $store->marketplace);
+        } catch (\Throwable $e) {
+            report($e); // exception tak terduga: jangan jadi error 500 mentah — beri tahu user dgn jelas
+            $this->notify('Impor gagal — terjadi kesalahan tak terduga', [
+                'Sebagian file mungkin sudah tersimpan. Mengulangi impor file yang sama AMAN (data digabung, tidak dobel).',
+                'Detail teknis: ' . $e->getMessage(),
+            ], 'danger');
+
+            return;
+        }
         $this->report = $result['report'];
         $this->summary = $result['summary'];
         \App\Support\DashboardCache::forget((int) $store->organization_id); // data berubah → dashboard segar
@@ -250,14 +260,23 @@ class ImportData extends Page
             return;
         }
 
-        $res = (new OrderImporter((int) auth()->user()->organization_id))->importCatalogFile(
-            $file->getRealPath(),
-            $file->getClientOriginalName(),
-            (string) ($data['supplier_name'] ?? ''),
-            false, // bukan dropship — dropship punya menu sendiri
-            ($data['hpp_mode'] ?? 'none') === 'current',
-            ($data['hpp_mode'] ?? 'none') === 'dated',
-        );
+        try {
+            $res = (new OrderImporter((int) auth()->user()->organization_id))->importCatalogFile(
+                $file->getRealPath(),
+                $file->getClientOriginalName(),
+                (string) ($data['supplier_name'] ?? ''),
+                false, // bukan dropship — dropship punya menu sendiri
+                ($data['hpp_mode'] ?? 'none') === 'current',
+                ($data['hpp_mode'] ?? 'none') === 'dated',
+            );
+        } catch (\Throwable $e) {
+            report($e);
+            $this->notify('Impor daftar produk gagal — kesalahan tak terduga', [
+                'Mengulangi impor file yang sama AMAN. Detail teknis: ' . $e->getMessage(),
+            ], 'danger');
+
+            return;
+        }
 
         if (! ($res['ok'] ?? false)) {
             $this->notify('Impor daftar produk gagal', ['Penyebab: ' . ($res['reason'] ?? 'Format file tidak dikenali.')], 'danger');
@@ -287,8 +306,17 @@ class ImportData extends Page
             return;
         }
 
-        $res = (new OrderImporter((int) auth()->user()->organization_id))
-            ->importDropshipFile($file->getRealPath(), $file->getClientOriginalName());
+        try {
+            $res = (new OrderImporter((int) auth()->user()->organization_id))
+                ->importDropshipFile($file->getRealPath(), $file->getClientOriginalName());
+        } catch (\Throwable $e) {
+            report($e);
+            $this->notify('Impor dropship gagal — kesalahan tak terduga', [
+                'Mengulangi impor file yang sama AMAN. Detail teknis: ' . $e->getMessage(),
+            ], 'danger');
+
+            return;
+        }
 
         if (! ($res['ok'] ?? false)) {
             $this->notify('Impor dropship gagal', ['Penyebab: ' . ($res['reason'] ?? 'Format file tidak dikenali.')], 'danger');

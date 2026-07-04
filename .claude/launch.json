@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "markazhub",
+      "runtimeExecutable": "D:\\DATA~WEB_Project\\Laragon\\bin\\php\\php-8.3.31-Win32-vs16-x64\\php.exe",
+      "runtimeArgs": ["artisan", "serve", "--host=127.0.0.1", "--port=8123"],
+      "port": 8123
+    }
+  ]
+}

@@ -217,6 +217,11 @@ function mp_parse_date(?string $raw): string
 {
     if (!$raw) return date('Y-m-d H:i:s');
     $raw = trim($raw);
+    // Angka murni 4-5 digit = tanggal SERIAL Excel (sel bertipe tanggal tersimpan sebagai angka,
+    // mis. 45123 = 16 Jul 2023). Tanpa ini strtotime gagal → diam-diam jadi "hari ini".
+    if (preg_match('/^\d{4,5}(\.\d+)?$/', $raw) && (float) $raw >= 20000 && (float) $raw < 80000) {
+        return gmdate('Y-m-d H:i:s', (int) round(((float) $raw - 25569) * 86400)); // epoch Excel 1900
+    }
     // Tokopedia/TikTok & Dropship menulis tanggal DD/MM/YYYY. strtotime menganggap
     // garis miring = M/D/Y (gaya AS), jadi salah baca. Ubah dulu ke Y-M-D.
     // (Format Y/M/D "2026/06/17" dan ISO "2026-06-14" tidak ikut terpola.)

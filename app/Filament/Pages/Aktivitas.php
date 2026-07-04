@@ -17,7 +17,7 @@ class Aktivitas extends Page
 
     protected static ?string $title = 'Log Aktivitas';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 8;
 
     public function getViewData(): array
     {

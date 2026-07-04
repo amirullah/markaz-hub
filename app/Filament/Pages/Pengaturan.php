@@ -22,7 +22,7 @@ class Pengaturan extends Page
 
     protected static ?string $title = 'Pengaturan Organisasi';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 10;
 
     public function getViewData(): array
     {

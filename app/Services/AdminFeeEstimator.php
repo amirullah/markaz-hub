@@ -242,27 +242,32 @@ class AdminFeeEstimator
     {
         $fees = $this->feesForOrg($orgId);
 
-        $orders = Order::withoutGlobalScopes()
+        $updated = 0;
+        $total = 0.0;
+        $eligible = 0;
+
+        // chunkById: org besar bisa punya puluhan ribu pesanan belum-final — jangan muat semua
+        // (beserta items.product.category) ke memori sekaligus; batasi per-500 agar aman di shared hosting.
+        Order::withoutGlobalScopes()
             ->where('organization_id', $orgId)
             ->where('income_verified', false)
             ->with('items.product.category')
-            ->get();
+            ->chunkById(500, function ($orders) use (&$updated, &$total, &$eligible, $fees): void {
+                foreach ($orders as $order) {
+                    $eligible++;
+                    $estimate = $this->estimate($order, $fees);
+                    // Toleransi ½ sen: kolom decimal(:2) — perbandingan float !== rapuh (0.10 vs 0.1000000001).
+                    if (abs((float) $order->admin_fee - $estimate) >= 0.005) {
+                        $order->admin_fee = $estimate;
+                        $order->saveQuietly();
+                    }
+                    if ($estimate > 0) {
+                        $updated++;
+                        $total += $estimate;
+                    }
+                }
+            });
 
-        $updated = 0;
-        $total = 0.0;
-
-        foreach ($orders as $order) {
-            $estimate = $this->estimate($order, $fees);
-            if ((float) $order->admin_fee !== $estimate) {
-                $order->admin_fee = $estimate;
-                $order->saveQuietly();
-            }
-            if ($estimate > 0) {
-                $updated++;
-                $total += $estimate;
-            }
-        }
-
-        return ['updated' => $updated, 'total' => round($total, 2), 'eligible' => $orders->count()];
+        return ['updated' => $updated, 'total' => round($total, 2), 'eligible' => $eligible];
     }
 }

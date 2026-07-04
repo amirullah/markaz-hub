@@ -21,7 +21,7 @@ class Insight extends Page
 
     protected static ?string $title = 'Insight & Produk Merugi';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 7;
 
     /** Detail produk yang sedang dibuka (klik baris). */
     public ?array $detail = null;

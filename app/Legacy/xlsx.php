@@ -124,6 +124,15 @@ function xlsx_read(string $path, ?array $only = null): array
     if (!class_exists('ZipArchive')) return [];
     $zip = new ZipArchive();
     if ($zip->open($path) !== true) return [];
+    // Pagar zip-bomb: laporan marketplace asli jauh di bawah batas ini setelah dekompresi.
+    // File dengan isi terdekompresi tak wajar ditolak (dianggap bukan laporan) — mencegah
+    // kehabisan memori saat getFromName memuat XML raksasa.
+    $totalUncompressed = 0;
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $st = $zip->statIndex($i);
+        if ($st !== false) $totalUncompressed += (int) ($st['size'] ?? 0);
+    }
+    if ($totalUncompressed > 300 * 1024 * 1024) { $zip->close(); return []; }
     $shared = xlsx_shared_strings($zip);
     $targets = xlsx_sheet_targets($zip);
     $sheets = [];

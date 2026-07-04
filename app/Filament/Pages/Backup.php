@@ -23,7 +23,7 @@ class Backup extends Page
 
     protected static ?string $title = 'Backup & Pemulihan Data';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 9;
 
     public function downloadAction(): Action
     {

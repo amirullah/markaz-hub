@@ -123,7 +123,9 @@ class OrdersTable
             // Akibatnya, kode tabel/bulk yang butuh sku TIDAK boleh andalkan relasi ini ($record->items->...->sku
             // akan null; loadMissing = no-op karena relasi sudah ter-load). Query order_items langsung
             // (lihat bulk "Salin SKU Produk"). itemsTableHtml() aman karena dipakai di halaman View (record terpisah).
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('items:id,order_id,product_id')->withCount('items'))
+            // store ikut di-eager-load: kolom "marketplace" menampilkan nama toko per baris —
+            // tanpa ini jadi N+1 (1 query stores per baris; terasa di paginasi 250 + MySQL remote).
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['items:id,order_id,product_id', 'store:id,name,marketplace'])->withCount('items'))
             ->filters([
                 SelectFilter::make('store_id')
                     ->label('Toko')

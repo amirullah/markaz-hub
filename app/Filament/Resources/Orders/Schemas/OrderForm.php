@@ -72,7 +72,12 @@ class OrderForm
                         ->columns(3)
                         ->schema([
                             self::rpInput('cogs', 'HPP / Modal'),
-                            self::rpInput('admin_fee', 'Biaya Admin Marketplace'),
+                            self::rpInput('admin_fee', 'Biaya Admin Marketplace')
+                                // Tanpa peringatan ini, user mengedit manual lalu bingung nilainya
+                                // berubah sendiri (ditimpa estimator saat impor/kalibrasi berikutnya).
+                                ->helperText(fn ($record): ?string => ($record && ! $record->income_verified)
+                                    ? 'Pesanan ini belum ada Laporan Penghasilan → nilai ini ESTIMASI dan akan dihitung ulang otomatis saat impor/kalibrasi berikutnya.'
+                                    : null),
                             self::rpInput('shipping_cost_seller', 'Ongkir Ditanggung Penjual'),
                             self::rpInput('voucher_seller_borne', 'Voucher Ditanggung Penjual'),
                             self::rpInput('dropship_cost', 'Biaya Dropship (Jakmall)')

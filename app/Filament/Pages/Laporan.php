@@ -19,7 +19,7 @@ class Laporan extends Page
 
     protected static ?string $title = 'Laporan Bulanan & Tahunan';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 6;
 
     /** Tahun yang sedang dilihat untuk rincian bulanan. */
     public ?int $tahun = null;

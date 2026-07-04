@@ -27,13 +27,6 @@ class ProfitService
     public const SQL_NET = '(CASE WHEN (product_revenue + other_income) > 0 THEN (product_revenue + other_income - (admin_fee + shipping_cost_seller + voucher_seller_borne + other_cost)) ELSE 0 END)';
 
     /**
-     * Ekspresi SQL laba — HARUS identik dengan profit(). Dipakai untuk sort/agregat
-     * (orderByRaw/whereRaw/selectRaw). Bila settlement (net) <= 0 → HPP/dropship belum
-     * direalisasi → laba = net (pending); selain itu net − HPP − dropship.
-     */
-    public const SQL_PROFIT = '(CASE WHEN ' . self::SQL_NET . ' <= 0 THEN ' . self::SQL_NET . ' ELSE (' . self::SQL_NET . ' - cogs - dropship_cost) END)';
-
-    /**
      * Ekspresi SQL biaya dropship aktif sesuai toggle Dropship:
      * - Dropship AKTIF   → 'dropship_cost' (total ke Dropship = modal + biaya mitra)
      * - Dropship NONAKTIF → modal historis (seolah packing sendiri). Bila modal historis

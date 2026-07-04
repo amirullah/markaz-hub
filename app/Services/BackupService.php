@@ -213,7 +213,12 @@ class BackupService
                     if (! is_array($rows) || $rows === []) {
                         return [];
                     }
-                    $base = (int) DB::table($table)->max('id');
+                    // Hanya kolom yang benar-benar ada di tabel (file backup bisa berisi kolom asing/
+                    // hasil manipulasi → tanpa filter ini, satu kolom tak dikenal menggagalkan restore).
+                    $validCols = array_flip(DB::getSchemaBuilder()->getColumnListing($table));
+                    // lockForUpdate: kunci MAX(id) sampai commit — tanpa ini dua restore/import
+                    // bersamaan bisa menghitung base sama → tabrakan primary key di tengah restore.
+                    $base = (int) DB::table($table)->lockForUpdate()->max('id');
                     $map = [];
                     $out = [];
                     $i = 0;
@@ -221,6 +226,7 @@ class BackupService
                         if (! is_array($r)) {
                             continue;
                         }
+                        $r = array_intersect_key($r, $validCols); // buang kolom yang tak dikenal tabel
                         $newId = $base + 1 + $i;
                         $i++;
                         if (isset($r['id'])) {
@@ -311,6 +317,15 @@ class BackupService
                 $pdo->exec("SET SESSION sql_mode=''");
                 $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
+                // PAGAR LINTAS-ORG: regex header di atas tak menangkap format INSERT ... VALUES
+                // (nilai organization_id ada di posisi kolom, bukan "organization_id = N").
+                // Catat jumlah baris MILIK ORG LAIN sebelum eksekusi; bila bertambah setelahnya,
+                // file ini menulis ke tenant lain → batalkan (transaksi rollback, tak ada jejak).
+                $lain = [];
+                foreach (self::RESTORABLE as $t) {
+                    $lain[$t] = (int) DB::table($t)->where('organization_id', '<>', $orgId)->count();
+                }
+
                 foreach (self::DELETE_ORDER as $table) {
                     DB::table($table)->where('organization_id', $orgId)->delete();
                 }
@@ -319,6 +334,12 @@ class BackupService
                 foreach ($statements as $stmt) {
                     $pdo->prepare($stmt)->execute();
                     $n++;
+                }
+
+                foreach (self::RESTORABLE as $t) {
+                    if ((int) DB::table($t)->where('organization_id', '<>', $orgId)->count() > $lain[$t]) {
+                        throw new \RuntimeException('File backup ini berisi data organisasi lain — dibatalkan, tidak ada data yang diubah.');
+                    }
                 }
 
                 return ['statements' => $n, 'orders' => DB::table('orders')->where('organization_id', $orgId)->count()];

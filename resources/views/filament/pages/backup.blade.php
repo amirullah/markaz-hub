@@ -14,7 +14,7 @@
                 <div style="font-size:1.6rem;line-height:1">📥</div>
                 <div style="flex:1">
                     <div style="font-weight:700;color:#1e293b;font-size:1.02rem">Unduh Backup</div>
-                    <div style="font-size:.85rem;color:#475569;margin:.25rem 0">Simpan <strong>seluruh data Anda</strong> (toko, supplier, produk, pemetaan SKU, pesanan &amp; item) ke satu file <code>.sql</code> di komputer.</div>
+                    <div style="font-size:.85rem;color:#475569;margin:.25rem 0">Simpan <strong>seluruh data Anda</strong> (toko, supplier, produk, pemetaan SKU, pesanan &amp; item) ke satu file <code>.zip</code> di komputer.</div>
                     <ul style="{{ $ul }}">
                         <li>Aman disimpan sebagai pengaman; lakukan berkala (mis. mingguan).</li>
                         <li>Selalu unduh backup dulu sebelum memulihkan / mengosongkan data.</li>
@@ -32,7 +32,7 @@
                     <div style="font-weight:700;color:#1e293b;font-size:1.02rem">Pulihkan dari Backup</div>
                     <div style="font-size:.85rem;color:#475569;margin:.25rem 0"><strong>Mengganti</strong> data Anda saat ini dengan isi file backup. Berguna untuk mengembalikan kondisi sebelumnya.</div>
                     <ul style="{{ $ul }}">
-                        <li>Unggah file <code>.sql</code> hasil <em>Unduh Backup</em>, lalu ketik konfirmasi.</li>
+                        <li>Unggah file <code>.zip</code> hasil <em>Unduh Backup</em>, lalu ketik konfirmasi.</li>
                         <li>Data saat ini akan ditimpa — pastikan filenya benar.</li>
                     </ul>
                     <div style="{{ $btnWrap }};margin-top:.85rem">{{ $this->restoreAction }}</div>

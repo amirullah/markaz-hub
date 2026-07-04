@@ -16,13 +16,29 @@ class RiwayatPerubahan extends Page
 
     protected static ?string $title = 'Riwayat Perubahan';
 
-    protected static ?int $navigationSort = 9;
+    protected static ?int $navigationSort = 11;
 
     /**
      * Catatan perubahan PER HARI (terbaru di atas). Tambahkan poin baru ke
      * tanggal teratas setiap ada perubahan.
      */
     public const CHANGELOG = [
+        [
+            'date' => '5 Juli 2026',
+            'changes' => [
+                'AUDIT MENYELURUH (backend, logika, keamanan, performa, UI/UX) + perbaikan langsung. Semua rumus laba TIDAK berubah (golden test tetap lulus; total 21 test hijau).',
+                'Pesanan yang pernah DIHAPUS kini otomatis PULIH saat file yang memuatnya diimpor ulang. (Sebelumnya: pesanan terhapus diam-diam ter-update tapi tetap tersembunyi dari semua laporan — data seolah masuk padahal tak tampil.)',
+                'Impor kini dikunci per akun: dua impor BERSAMAAN untuk akun yang sama ditolak dengan pesan jelas (mencegah data ganda/tabrakan saat tak sengaja impor dobel dari dua tab).',
+                'Impor lebih tangguh: kegagalan tak terduga saat impor (laporan marketplace / daftar produk / dropship) kini ditampilkan sebagai notifikasi yang jelas — bukan layar error 500. Mengulangi impor file yang sama selalu AMAN (digabung, tidak dobel).',
+                'Tanggal dari sel Excel bertipe TANGGAL (tersimpan sebagai angka serial, mis. 45123) kini terbaca benar — sebelumnya diam-diam dianggap "hari ini". Juga ada pagar pengaman terhadap file .xlsx abnormal (zip-bomb) agar impor tak menghabiskan memori.',
+                'Estimasi biaya admin setelah impor kini hemat memori (diproses bertahap per-500 pesanan) — impor di akun besar tak lagi berisiko kehabisan memori/lambat panjang. Perbandingan nilai memakai toleransi ½ sen (tak ada lagi update bolak-balik akibat pembulatan).',
+                'Backup & Pulihkan: (1) teks halaman diperbaiki — file backup memang .zip, bukan .sql; (2) pemulihan kini kebal tabrakan bila ada dua proses tulis bersamaan (penomoran ID dikunci); (3) kolom asing di file backup otomatis diabaikan (file hasil edit/manipulasi tak menggagalkan pemulihan); (4) pengaman baru: file backup milik AKUN LAIN berformat lama (.sql) kini pasti ditolak utuh — tidak ada satu baris pun yang menulis ke akun berbeda.',
+                'Tabel Pesanan lebih cepat: nama toko per baris tak lagi memicu query terpisah per baris (N+1) — kini dimuat sekali (terasa di 100-250 baris/halaman).',
+                'Form Edit Pesanan: kolom "Biaya Admin Marketplace" kini memberi tahu bila nilainya masih ESTIMASI dan akan dihitung ulang otomatis saat impor/kalibrasi berikutnya (tak lagi tampak "berubah sendiri").',
+                'Menu samping dirapikan: label "Import" → "Impor Data" (konsisten bahasa Indonesia) dan urutan menu kini eksplisit (Pesanan, Produk, Kategori, Toko, Impor Data, Laporan, Insight, Aktivitas, Backup, Pengaturan, Riwayat) — sebelumnya ada dua pasang menu yang urutannya bisa saling bertukar.',
+                'Kebersihan kode: konstanta rumus laba lama yang tak terpakai (dan sudah tak sinkron dengan rumus aktif) dihapus agar tak menyesatkan pengembangan berikutnya. Tambah 18 test otomatis pengunci aturan pembaruan STATUS pesanan (maju/terminal diterapkan, mundur diabaikan, finansial income tak tersentuh).',
+            ],
+        ],
         [
             'date' => '26 Juni 2026',
             'changes' => [
