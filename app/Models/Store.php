@@ -86,4 +86,17 @@ class Store extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+    /** Koneksi API Shopee milik toko ini (bila pernah dihubungkan). */
+    public function shopeeConnection(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MarketplaceConnection::class)->where('platform', 'SHOPEE');
+    }
+
+    public function shopeeConnected(): bool
+    {
+        $c = $this->shopeeConnection;
+
+        return $c !== null && $c->isConnected();
+    }
 }

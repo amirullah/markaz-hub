@@ -71,12 +71,86 @@ class StoresTable
                     ->color(fn ($state): string => $state > 0 ? 'danger' : 'gray')
                     ->tooltip('Pesanan yang biaya dropship-nya sudah ada tapi belum jadi dropship (tak sinkron)')
                     ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship()),
+                // Status koneksi API Shopee (hanya relevan utk toko Shopee).
+                TextColumn::make('shopee_api')
+                    ->label('API')
+                    ->badge()
+                    ->state(function ($record): string {
+                        if ($record->marketplace !== 'SHOPEE') {
+                            return '—';
+                        }
+                        $c = $record->shopeeConnection;
+
+                        return match (true) {
+                            $c === null => 'Belum terhubung',
+                            $c->status === 'CONNECTED' => 'Terhubung',
+                            $c->status === 'ERROR' => 'Error',
+                            default => 'Terputus',
+                        };
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'Terhubung' => 'success', 'Error' => 'danger', 'Belum terhubung', 'Terputus' => 'warning', default => 'gray',
+                    })
+                    ->tooltip(fn ($record): ?string => $record->shopeeConnection?->last_synced_at
+                        ? 'Sinkron terakhir: ' . $record->shopeeConnection->last_synced_at->timezone('Asia/Jakarta')->format('d M Y H:i') . ' WIB'
+                        : null),
                 IconColumn::make('active')
                     ->label('Aktif')
                     ->boolean()
                     ->alignCenter(),
             ])
             ->recordActions([
+                // Hubungkan toko Shopee via halaman izin resmi Shopee (OAuth).
+                \Filament\Actions\Action::make('shopeeConnect')
+                    ->label('Hubungkan Shopee')
+                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedLink)
+                    ->color('warning')
+                    ->url(fn ($record): string => route('shopee.connect', $record))
+                    ->visible(fn ($record): bool => $record->marketplace === 'SHOPEE' && ! $record->shopeeConnected()),
+                // Tarik data pesanan+settlement via API (manual; push realtime tetap jalan sendiri).
+                \Filament\Actions\Action::make('shopeeSync')
+                    ->label('Sinkron Shopee')
+                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedArrowPath)
+                    ->color('success')
+                    ->visible(fn ($record): bool => $record->marketplace === 'SHOPEE' && $record->shopeeConnected())
+                    ->requiresConfirmation()
+                    ->modalHeading('Sinkron data dari Shopee?')
+                    ->modalDescription('Menarik pesanan & settlement terbaru dari Shopee API lalu menggabungkannya (aman diulang, tidak dobel).')
+                    ->action(function ($record): void {
+                        try {
+                            $res = app(\App\Services\Shopee\ShopeeSync::class)->syncStore($record->shopeeConnection);
+                            \Filament\Notifications\Notification::make()
+                                ->title('Sinkron Shopee selesai')
+                                ->body(($res['message'] ?? '') . ' (' . ($res['orders'] ?? 0) . ' pesanan, ' . ($res['escrow'] ?? 0) . ' settlement)')
+                                ->success()->send();
+                        } catch (\Throwable $e) {
+                            report($e);
+                            \Filament\Notifications\Notification::make()
+                                ->title('Sinkron Shopee gagal')->body($e->getMessage())->danger()->send();
+                        }
+                    }),
+                // Sinkron katalog produk (nama & SKU; modal TIDAK disentuh).
+                \Filament\Actions\Action::make('shopeeCatalog')
+                    ->label('Sinkron Katalog')
+                    ->icon(\Filament\Support\Icons\Heroicon::OutlinedRectangleStack)
+                    ->color('info')
+                    ->visible(fn ($record): bool => $record->marketplace === 'SHOPEE' && $record->shopeeConnected())
+                    ->requiresConfirmation()
+                    ->modalHeading('Sinkron katalog produk dari Shopee?')
+                    ->modalDescription('Menarik daftar produk & SKU dari Shopee. Harga MODAL tidak diubah (tetap dari Impor Daftar Produk).')
+                    ->action(function ($record): void {
+                        try {
+                            $res = app(\App\Services\Shopee\ShopeeSync::class)->syncCatalog($record->shopeeConnection);
+                            \Filament\Notifications\Notification::make()
+                                ->title('Katalog Shopee tersinkron')
+                                ->body(($res['products'] ?? 0) . ' produk/varian, ' . ($res['mapped_ids'] ?? 0) . ' pemetaan ID.')
+                                ->success()->send();
+                        } catch (\Throwable $e) {
+                            report($e);
+                            \Filament\Notifications\Notification::make()
+                                ->title('Sinkron katalog gagal')->body($e->getMessage())->danger()->send();
+                        }
+                    }),
                 EditAction::make(),
             ])
             ->toolbarActions([

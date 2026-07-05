@@ -41,4 +41,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    // Shopee Open Platform (open.shopee.com) — satu app utk semua toko;
+    // tiap toko mengizinkan akses via OAuth (token per-toko di marketplace_connections).
+    'shopee' => [
+        'partner_id' => env('SHOPEE_PARTNER_ID'),
+        'partner_key' => env('SHOPEE_PARTNER_KEY'),
+        'env' => env('SHOPEE_ENV', 'test'), // test (sandbox) | live
+    ],
+
 ];

@@ -26,6 +26,7 @@ class RiwayatPerubahan extends Page
         [
             'date' => '5 Juli 2026',
             'changes' => [
+                'BARU — INTEGRASI SHOPEE API (realtime, tahap 1): toko Shopee kini bisa DIHUBUNGKAN langsung ke Shopee lewat halaman izin resmi (tanpa menyimpan password). Setelah terhubung: (a) pesanan & perubahan status masuk OTOMATIS realtime via push Shopee; (b) settlement/dana cair (pengganti file Laporan Penghasilan) ditarik dari API → laba langsung FINAL; (c) tombol "Sinkron Shopee" & "Sinkron Katalog" di halaman Toko; (d) penyelaras terjadwal tiap 4 jam menyusulkan yang terlewat + settlement yang baru cair. Data API diproses lewat pipeline impor yang sama persis dengan file (aturan gabung status, HPP historis, estimasi→final) — angka konsisten. Untuk aktif perlu kredensial app dari open.shopee.com (pendaftaran oleh pemilik akun; panduan tersedia). Unggah file manual tetap bisa dipakai kapan saja.',
                 'AUDIT MENYELURUH (backend, logika, keamanan, performa, UI/UX) + perbaikan langsung. Semua rumus laba TIDAK berubah (golden test tetap lulus; total 21 test hijau).',
                 'Pesanan yang pernah DIHAPUS kini otomatis PULIH saat file yang memuatnya diimpor ulang. (Sebelumnya: pesanan terhapus diam-diam ter-update tapi tetap tersembunyi dari semua laporan — data seolah masuk padahal tak tampil.)',
                 'Impor kini dikunci per akun: dua impor BERSAMAAN untuk akun yang sama ditolak dengan pesan jelas (mencegah data ganda/tabrakan saat tak sengaja impor dobel dari dua tab).',

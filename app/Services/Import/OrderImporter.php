@@ -106,6 +106,33 @@ class OrderImporter
     }
 
     /**
+     * Titik masuk impor dari API marketplace (Shopee, dst): menerima sumber-sumber
+     * berbentuk normalized YANG SAMA dgn pembaca file, lalu menjalankan pipeline
+     * impor yang sama persis (merge, dropship, HPP historis, estimasi biaya admin).
+     * Memakai lock org yang sama dgn impor file — keduanya saling serialisasi.
+     */
+    public function importFromApi(array $sources, int $storeId, string $storeMarketplace): string
+    {
+        $lockName = 'mh_import_org_' . $this->orgId;
+        // Tunggu maks 5 dtk (webhook harus balas cepat); reconciliation menyusulkan yang terlewat.
+        if (! (int) (DB::selectOne('SELECT GET_LOCK(?, 5) AS l', [$lockName])->l ?? 0)) {
+            return 'Impor lain sedang berjalan untuk akun ini — sinkron ditunda, akan disusulkan otomatis.';
+        }
+        try {
+            $orders = mp_merge_orders(array_values(array_filter($sources)));
+            $dropshipMap = $this->persistedDropshipMap();
+            $msg = $this->importOrders($orders, $storeId, $storeMarketplace, $dropshipMap, ! empty($dropshipMap), 'SELF');
+            $this->backfillHpp();
+            app(\App\Services\AdminFeeEstimator::class)->applyToOrg($this->orgId);
+            \App\Support\DashboardCache::forget($this->orgId); // data berubah → dashboard segar
+
+            return $msg;
+        } finally {
+            DB::selectOne('SELECT RELEASE_LOCK(?) AS r', [$lockName]);
+        }
+    }
+
+    /**
      * Upsert katalog produk + deteksi perubahan harga. Sumber apa pun.
      * @param int|null $supplierId Supplier untuk produk (null = pakai/buat supplier dropship default).
      * @param bool $asDropship true: modal = harga di file (dropship); false: stok sendiri → dropship_cost dari kolom "Modal Dropship" (default 0).
