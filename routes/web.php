@@ -61,6 +61,28 @@ Route::middleware('auth')->group(function () {
         return view('print.invoice', compact('order'));
     })->name('print.invoice');
 
+    // Cetak label pengiriman (format marketplace, per-order)
+    Route::get('/print/shipping-label/{order}', function (\App\Models\Order $order) {
+        abort_if((int) $order->organization_id !== (int) auth()->user()->organization_id, 403);
+        return view('print.shipping-label', compact('order'));
+    })->name('print.shipping-label');
+
+    // Cetak label pengiriman batch
+    Route::get('/print/shipping-label/batch', function (\Illuminate\Http\Request $request) {
+        $ids = collect(explode(',', $request->str('ids', '')))->filter()->values();
+        if ($ids->isEmpty()) {
+            abort(400, 'Tidak ada pesanan dipilih.');
+        }
+        $orders = \App\Models\Order::whereIn('id', $ids)
+            ->where('organization_id', auth()->user()->organization_id)
+            ->with('items', 'store')
+            ->get();
+        if ($orders->isEmpty()) {
+            abort(404);
+        }
+        return view('print.shipping-label-batch', compact('orders'));
+    })->name('print.shipping-label.batch');
+
     // Cetak packing slip (per-order)
     Route::get('/print/packing-slip/{order}', function (\App\Models\Order $order) {
         abort_if((int) $order->organization_id !== (int) auth()->user()->organization_id, 403);

@@ -449,6 +449,12 @@ class OrdersTable
                     ->icon('heroicon-m-document-text')
                     ->color('gray')
                     ->url(fn (\App\Models\Order $record): string => route('print.invoice', $record), shouldOpenInNewTab: true),
+                \Filament\Actions\Action::make('cetakLabelResi')
+                    ->label('Cetak Label Resi')
+                    ->icon('heroicon-m-truck')
+                    ->color('gray')
+                    ->visible(fn (\App\Models\Order $record): bool => ! empty($record->tracking_number))
+                    ->url(fn (\App\Models\Order $record): string => route('print.shipping-label', $record), shouldOpenInNewTab: true),
             ])
             // Opsi jumlah per halaman lebih besar → mudah centang banyak sekaligus. Untuk memilih
             // SEMUA hasil filter (lintas halaman), centang kotak header lalu klik "Pilih semua".
@@ -786,6 +792,13 @@ class OrdersTable
                                     ->danger()->send();
                             }
                         }),
+                    \Filament\Tables\Actions\Action::make('cetakLabelResiBulk')
+                        ->label('Cetak Label Resi')
+                        ->icon('heroicon-m-truck')
+                        ->color('gray')
+                        ->url(fn (\Illuminate\Support\Collection $records): string => route('print.shipping-label.batch', [
+                            'ids' => $records->pluck('id')->join(','),
+                        ]), shouldOpenInNewTab: true),
                     DeleteBulkAction::make(),
                 ]),
             ]);
