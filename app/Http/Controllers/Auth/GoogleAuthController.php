@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 
 /**
  * Login dengan Google (Gmail). Login pertama otomatis membuat Organization (tenant)
@@ -24,8 +25,12 @@ class GoogleAuthController extends Controller
     {
         try {
             $g = Socialite::driver('google')->user();
+        } catch (InvalidStateException $e) {
+            \Log::warning('Google login: state tidak cocok (session expired?).', ['type' => get_class($e)]);
+            return redirect('/admin/login')->withErrors([
+                'email' => 'Sesi login habis. Silakan klik "Login dengan Google" sekali lagi.',
+            ]);
         } catch (\Throwable $e) {
-            // Catat detail untuk diagnosa; tampilkan pesan ringkas ke user (jangan bocorkan internal).
             \Log::error('Google login gagal: ' . $e->getMessage(), ['type' => get_class($e)]);
             return redirect('/admin/login')->withErrors(['email' => 'Login Google gagal. Silakan coba lagi.']);
         }

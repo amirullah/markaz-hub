@@ -108,7 +108,15 @@ class ShopeeClient
         if (! $c->tokenStale()) {
             return $c;
         }
-        $res = $this->refreshToken((string) $c->refresh_token, (int) $c->shop_id);
+        try {
+            $res = $this->refreshToken((string) $c->refresh_token, (int) $c->shop_id);
+        } catch (ShopeeApiException $e) {
+            $c->forceFill([
+                'status' => 'ERROR',
+                'last_error' => 'Refresh token gagal: ' . $e->getMessage(),
+            ])->save();
+            throw $e;
+        }
         $c->forceFill([
             'access_token' => $res['access_token'],
             // refresh_token BERGANTI tiap refresh — wajib simpan yang baru.
