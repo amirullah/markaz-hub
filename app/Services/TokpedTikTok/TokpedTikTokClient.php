@@ -183,7 +183,10 @@ class TokpedTikTokClient
         $expected = hash_hmac('sha256', $rawBody, $this->appSecret());
         return hash_equals($expected, trim($signature));
     }
-}
+
+    // =========================================================================
+    // ENDPOINT DATA
+    // =========================================================================
 
     public function orderList(MarketplaceConnection $c, int $createTimeFrom, int $createTimeTo, int $pageSize = 100, int $page = 1): array
     {
