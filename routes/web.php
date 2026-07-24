@@ -23,19 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tokpedtiktok/connect/{store}', [TokpedTikTokAuthController::class, 'connect'])->name('tokpedtiktok.connect');
     Route::get('/tokpedtiktok/callback/{store}', [TokpedTikTokAuthController::class, 'callback'])->name('tokpedtiktok.callback');
 
-    // Cetak packing slip (per-order)
-    Route::get('/print/packing-slip/{order}', function (\App\Models\Order $order) {
-        abort_if((int) $order->organization_id !== (int) auth()->user()->organization_id, 403);
-        return view('print.packing-slip', compact('order'));
-    })->name('print.packing-slip');
-
-    // Cetak invoice (per-order)
-    Route::get('/print/invoice/{order}', function (\App\Models\Order $order) {
-        abort_if((int) $order->organization_id !== (int) auth()->user()->organization_id, 403);
-        return view('print.invoice', compact('order'));
-    })->name('print.invoice');
-
-    // Cetak invoice batch
+    // Cetak invoice batch — HARUS di atas /{order} agar 'batch' tidak tertelan sebagai order ID
     Route::get('/print/invoice/batch', function (\Illuminate\Http\Request $request) {
         $ids = collect(explode(',', $request->str('ids', '')))->filter()->values();
         if ($ids->isEmpty()) {
@@ -51,7 +39,7 @@ Route::middleware('auth')->group(function () {
         return view('print.invoice-batch', compact('orders'));
     })->name('print.invoice.batch');
 
-    // Cetak packing slip batch (dari halaman Pesanan → Cetak Packing Slip)
+    // Cetak packing slip batch — HARUS di atas /{order}
     Route::get('/print/packing-slip/batch', function (\Illuminate\Http\Request $request) {
         $ids = collect(explode(',', $request->str('ids', '')))->filter()->values();
         if ($ids->isEmpty()) {
@@ -66,4 +54,16 @@ Route::middleware('auth')->group(function () {
         }
         return view('print.packing-slip-batch', compact('orders'));
     })->name('print.packing-slip.batch');
+
+    // Cetak invoice (per-order)
+    Route::get('/print/invoice/{order}', function (\App\Models\Order $order) {
+        abort_if((int) $order->organization_id !== (int) auth()->user()->organization_id, 403);
+        return view('print.invoice', compact('order'));
+    })->name('print.invoice');
+
+    // Cetak packing slip (per-order)
+    Route::get('/print/packing-slip/{order}', function (\App\Models\Order $order) {
+        abort_if((int) $order->organization_id !== (int) auth()->user()->organization_id, 403);
+        return view('print.packing-slip', compact('order'));
+    })->name('print.packing-slip');
 });
