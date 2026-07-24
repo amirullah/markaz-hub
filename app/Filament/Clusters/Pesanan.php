@@ -2,8 +2,8 @@
 
 namespace App\Filament\Clusters;
 
+use BackedEnum;
 use Filament\Clusters\Cluster;
-use Filament\Support\Icons\Heroicon;
 
 class Pesanan extends Cluster
 {
@@ -11,7 +11,7 @@ class Pesanan extends Cluster
 
     protected static ?string $clusterBreadcrumb = 'Pesanan';
 
-    protected static ?string $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?int $navigationSort = 1;
 

@@ -6,7 +6,6 @@ use App\Filament\Clusters\Pesanan;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -17,7 +16,7 @@ class Retur extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-uturn-left';
 
     protected static ?string $navigationLabel = 'Retur';
 
