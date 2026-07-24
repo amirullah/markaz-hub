@@ -142,12 +142,22 @@ class Insight extends Page
         $urlImpor = \App\Filament\Pages\ImportData::getUrl();
         $urlProduk = \App\Filament\Resources\Products\ProductResource::getUrl('index');
 
+        // Pipeline processing stats.
+        $pipeline = [
+            'baru' => Order::query()->where('processing_status', 'PENDING')->count(),
+            'diproses' => Order::query()->where('processing_status', 'PROCESSING')->count(),
+            'dikemas' => Order::query()->where('processing_status', 'PACKED')->count(),
+            'dikirim' => Order::query()->where('processing_status', 'SHIPPED')->count(),
+            'gagal' => Order::query()->where('processing_status', 'FAILED')->count(),
+        ];
+
         return compact(
             'pesananRugi', 'bawahModal', 'palingUntung', 'terlaris',
             'jmlRugi', 'nilaiRugi', 'jmlRetur', 'jmlBatal', 'rasioRetur', 'totalPesanan',
             'totalLaba', 'margin', 'jmlProdukRugi',
             'sebab', 'labaSemu', 'urlOrders', 'urlLabaSemu', 'urlImpor', 'urlProduk',
             'urlSelesai', 'urlRugi', 'urlRetur',
+            'pipeline',
         );
     }
 

@@ -33,6 +33,36 @@
         {!! $statCard('Rasio Retur', $rasioRetur . '%', '#d97706', $pReturn, '#fffbeb', $jmlRetur . ' dari ' . number_format($totalPesanan, 0, ',', '.') . ' · batal ' . $jmlBatal, $urlRetur) !!}
     </div>
 
+    {{-- Pipeline Processing — progres pesanan hari ini / total aktif --}}
+    @if (array_sum($pipeline) > 0)
+    <x-filament::section>
+        <x-slot name="heading">{!! $hicon('M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z', '#0f172a') !!}Pipeline Proses Pesanan</x-slot>
+        <x-slot name="description">Progres pesanan dari Baru → Dikirim. Klik untuk buka tab terkait.</x-slot>
+        @php
+            $pipeUrl = \App\Filament\Resources\Orders\OrderResource::getUrl('index');
+            $pipe = [
+                ['Baru', $pipeline['baru'], '#d97706', 'bg-amber-50', $pipeUrl . '?tab=baru'],
+                ['Diproses', $pipeline['diproses'], '#2563eb', 'bg-blue-50', $pipeUrl . '?tab=diproses'],
+                ['Dikemas', $pipeline['dikemas'], '#6366f1', 'bg-indigo-50', $pipeUrl . '?tab=dikemas'],
+                ['Dikirim', $pipeline['dikirim'], '#16a34a', 'bg-green-50', $pipeUrl . '?tab=dikirim'],
+                ['Gagal', $pipeline['gagal'], '#dc2626', 'bg-red-50', $pipeUrl . '?tab=gagal'],
+            ];
+            $total = max(array_sum($pipeline), 1);
+        @endphp
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.35rem">
+            @foreach ($pipe as [$lbl, $n, $clr, $bg, $href])
+                <a href="{{ $href }}" class="mkz-stat-card" style="flex:1 1 80px;display:flex;align-items:center;gap:.5rem;border:1px solid #e8edf3;border-radius:.65rem;padding:.5rem .7rem;background:#fff;text-decoration:none;cursor:pointer">
+                    <div style="width:2rem;height:2rem;flex:none;display:flex;align-items:center;justify-content:center;border-radius:.5rem;background:{{ $bg }}">
+                        <span style="font-size:.82rem;font-weight:800;color:{{ $clr }}">{{ $n }}</span>
+                    </div>
+                    <div style="font-size:.73rem;color:#475569;font-weight:600;min-width:0">{{ $lbl }}</div>
+                    <div style="margin-left:auto;font-size:.65rem;color:#94a3b8">{{ round($n / $total * 100) }}%</div>
+                </a>
+            @endforeach
+        </div>
+    </x-filament::section>
+    @endif
+
     @if ($jmlRugi > 0)
     {{-- KENAPA pesanan rugi + TINDAKAN dekat --}}
     <x-filament::section>

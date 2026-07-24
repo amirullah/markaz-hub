@@ -118,15 +118,55 @@ class OrdersTable
                         return 'Laba final & akurat — biaya asli, modal, & rincian item lengkap.';
                     })
                     ->toggleable(),
-                // Status Proses (badge berwarna).
+                // Status Proses (badge berwarna, tooltip failed_reason utk FAILED).
                 TextColumn::make('processing_status')
                     ->label('Proses')
                     ->badge()
                     ->alignCenter()
                     ->formatStateUsing(fn ($state): string => \App\Models\Order::processingStatusLabel($state))
                     ->color(fn ($state): string => \App\Models\Order::processingStatusColor($state))
+                    ->tooltip(fn (\App\Models\Order $record): ?string => $record->processing_status === 'FAILED' ? $record->failed_reason : null)
                     ->sortable()
                     ->toggleable(),
+                // Stok — indikasi kecukupan stok untuk order ini.
+                \Filament\Tables\Columns\IconColumn::make('stock_ok')
+                    ->label('Stok')
+                    ->alignCenter()
+                    ->toggleable()
+                    ->state(function (\App\Models\Order $record): string {
+                        $short = 0;
+                        foreach ($record->items as $item) {
+                            if ($item->product_id && (int) $item->qty > 0 && $item->product && (int) $item->product->stock < (int) $item->qty) {
+                                $short++;
+                            }
+                        }
+                        if ($short > 0) {
+                            return 'short';
+                        }
+                        if ($record->items->isEmpty() || ! $record->items->first()->product_id) {
+                            return 'unknown';
+                        }
+                        return 'ok';
+                    })
+                    ->icon(fn (string $state): string => match ($state) {
+                        'ok' => 'heroicon-m-check-circle',
+                        'short' => 'heroicon-m-exclamation-triangle',
+                        default => 'heroicon-m-minus-small',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'ok' => 'success',
+                        'short' => 'danger',
+                        default => 'gray',
+                    })
+                    ->tooltip(function (\App\Models\Order $record): ?string {
+                        $shortages = [];
+                        foreach ($record->items as $item) {
+                            if ($item->product_id && (int) $item->qty > 0 && $item->product && (int) $item->product->stock < (int) $item->qty) {
+                                $shortages[] = "{$item->product->name}: stok {$item->product->stock}, butuh {$item->qty}";
+                            }
+                        }
+                        return $shortages ? 'Stok kurang: ' . implode('; ', $shortages) : (($record->items->isEmpty() || ! $record->items->first()->product_id) ? 'Stok tidak diketahui' : 'Stok cukup');
+                    }),
             ])
             // PENTING: items di-load TANPA kolom sku (hemat) — cuma butuh count & product_id untuk deskripsi.
             // Akibatnya, kode tabel/bulk yang butuh sku TIDAK boleh andalkan relasi ini ($record->items->...->sku
@@ -134,7 +174,7 @@ class OrdersTable
             // (lihat bulk "Salin SKU Produk"). itemsTableHtml() aman karena dipakai di halaman View (record terpisah).
             // store ikut di-eager-load: kolom "marketplace" menampilkan nama toko per baris —
             // tanpa ini jadi N+1 (1 query stores per baris; terasa di paginasi 250 + MySQL remote).
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['items:id,order_id,product_id', 'items.product:id,stock', 'store:id,name,marketplace'])->withCount('items'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['items:id,order_id,product_id', 'items.product:id,name,stock', 'store:id,name,marketplace'])->withCount('items'))
             ->filters([
                 SelectFilter::make('store_id')
                     ->label('Toko')
@@ -245,7 +285,7 @@ class OrdersTable
                     ->schema([
                         ToggleButtons::make('value')->label('Proses')->hiddenLabel()
                             ->inline()
-                            ->options(['semua' => 'Semua proses', 'perlu' => 'Perlu Diproses', 'diproses' => 'Diproses', 'dikemas' => 'Dikemas', 'dikirim' => 'Dikirim'])->default('semua'),
+                            ->options(['semua' => 'Semua proses', 'perlu' => 'Perlu Diproses', 'diproses' => 'Diproses', 'dikemas' => 'Dikemas', 'dikirim' => 'Dikirim', 'gagal' => 'Gagal'])->default('semua'),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         ($v = $data['value'] ?? null) && $v !== 'semua',
@@ -254,6 +294,7 @@ class OrdersTable
                             'diproses' => $q->where('processing_status', 'PROCESSING'),
                             'dikemas' => $q->where('processing_status', 'PACKED'),
                             'dikirim' => $q->sudahDikirim(),
+                            'gagal' => $q->where('processing_status', 'FAILED'),
                             default => $q,
                         },
                     ))
@@ -262,6 +303,7 @@ class OrdersTable
                         'diproses' => 'Diproses',
                         'dikemas' => 'Dikemas',
                         'dikirim' => 'Dikirim',
+                        'gagal' => 'Gagal',
                         default => null,
                     }),
                 // Periode — pill cepat sekali-klik.
@@ -370,6 +412,32 @@ class OrdersTable
                     ->icon('heroicon-m-printer')
                     ->color('gray')
                     ->url(fn (\App\Models\Order $record): string => route('print.packing-slip', $record), shouldOpenInNewTab: true),
+                \Filament\Actions\Action::make('cetakLabelRow')
+                    ->label('Cetak Label Pengiriman')
+                    ->icon('heroicon-m-document-arrow-down')
+                    ->color('gray')
+                    ->visible(fn (\App\Models\Order $record): bool => in_array($record->marketplace, ['SHOPEE', 'TIKTOK', 'TIKTOKTOKO'], true))
+                    ->action(function (\App\Models\Order $record): void {
+                        $result = app(\App\Services\ShippingService::class)->getShippingLabel($record);
+                        if ($result['success'] && $result['url']) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Label Pengiriman')
+                                ->body('Klik tombol di bawah untuk mencetak.')
+                                ->success()
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('buka')
+                                        ->label('Buka Label')
+                                        ->button()
+                                        ->url($result['url'], shouldOpenInNewTab: true),
+                                ])
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Gagal mengambil label')
+                                ->body($result['message'])
+                                ->danger()->send();
+                        }
+                    }),
             ])
             // Opsi jumlah per halaman lebih besar → mudah centang banyak sekaligus. Untuk memilih
             // SEMUA hasil filter (lintas halaman), centang kotak header lalu klik "Pilih semua".
@@ -384,15 +452,49 @@ class OrdersTable
                         ->icon('heroicon-m-play')
                         ->color('info')
                         ->action(function (\Illuminate\Support\Collection $records): void {
-                            $n = $records->each->update(['processing_status' => 'PROCESSING'])->count();
-                            \Filament\Notifications\Notification::make()->title("{$n} pesanan ditandai Diproses")->success()->send();
+                            $ok = [];
+                            $fail = [];
+                            $records->load('items.product');
+                            foreach ($records as $order) {
+                                $shortages = [];
+                                foreach ($order->items as $item) {
+                                    if ($item->product_id && (int) $item->qty > 0) {
+                                        $p = $item->product;
+                                        if ($p && (int) $p->stock < (int) $item->qty) {
+                                            $shortages[] = "{$p->name} (stok {$p->stock}, butuh {$item->qty})";
+                                        }
+                                    }
+                                }
+                                if ($shortages) {
+                                    $order->update([
+                                        'processing_status' => 'FAILED',
+                                        'failed_reason' => 'Stok kurang: ' . implode('; ', $shortages),
+                                    ]);
+                                    $fail[] = $order->external_no;
+                                } else {
+                                    $order->update(['processing_status' => 'PROCESSING', 'failed_reason' => null]);
+                                    $ok[] = $order->external_no;
+                                }
+                            }
+                            $parts = [];
+                            if ($ok) {
+                                $parts[] = count($ok) . ' diproses';
+                            }
+                            if ($fail) {
+                                $parts[] = count($fail) . ' gagal (stok kurang)';
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title(implode(', ', $parts))
+                                ->body($fail ? 'Gagal: ' . implode('; ', array_slice($fail, 0, 10)) : null)
+                                ->success()
+                                ->send();
                         }),
                     \Filament\Actions\Action::make('tandaiDikemas')
                         ->label('Tandai Dikemas')
                         ->icon('heroicon-m-square-3-stack-3d')
                         ->color('primary')
                         ->action(function (\Illuminate\Support\Collection $records): void {
-                            $n = $records->each->update(['processing_status' => 'PACKED'])->count();
+                            $n = $records->each->update(['processing_status' => 'PACKED', 'failed_reason' => null])->count();
                             \Filament\Notifications\Notification::make()->title("{$n} pesanan ditandai Dikemas")->success()->send();
                         }),
                     \Filament\Actions\Action::make('tandaiDikirim')
@@ -411,14 +513,17 @@ class OrdersTable
                         ])
                         ->action(function (array $data, \Illuminate\Support\Collection $records): void {
                             $now = now();
-                            $records->each(function (\App\Models\Order $order) use ($data, $now): void {
+                            $shipping = app(\App\Services\ShippingService::class);
+                            $errors = [];
+                            $records->each(function (\App\Models\Order $order) use ($data, $now, $shipping, &$errors): void {
                                 $order->update([
                                     'processing_status' => 'SHIPPED',
                                     'tracking_number' => $data['tracking_number'],
                                     'courier' => $data['courier'],
                                     'shipped_at' => $now,
+                                    'failed_reason' => null,
                                 ]);
-                                // Kurangi stok untuk tiap item yang punya SKU + product mapping.
+                                // Kurangi stok untuk tiap item yang punya product mapping.
                                 foreach ($order->items as $item) {
                                     if ($item->product_id && (int) $item->qty > 0) {
                                         $item->product->decrement('stock', (int) $item->qty);
@@ -432,10 +537,58 @@ class OrdersTable
                                         ]);
                                     }
                                 }
+                                // Kirim resi ke marketplace via API.
+                                if (in_array($order->marketplace, ['SHOPEE', 'TIKTOK', 'TIKTOKTOKO'], true)) {
+                                    $result = $shipping->ship($order);
+                                    if (! $result['success']) {
+                                        $errors[] = "{$order->external_no}: {$result['message']}";
+                                    }
+                                }
                             });
+                            $msg = $records->count() . ' pesanan ditandai Dikirim';
+                            if ($errors) {
+                                $msg .= '. Gagal kirim resi ke marketplace: ' . implode('; ', $errors);
+                            }
                             \Filament\Notifications\Notification::make()
-                                ->title($records->count() . ' pesanan ditandai Dikirim')
+                                ->title($msg)
                                 ->body('Resi: ' . $data['tracking_number'])
+                                ->success()->send();
+                        }),
+                    \Filament\Actions\Action::make('tandaiGagal')
+                        ->label('Tandai Gagal')
+                        ->icon('heroicon-m-x-circle')
+                        ->color('danger')
+                        ->form([
+                            \Filament\Forms\Components\Textarea::make('failed_reason')
+                                ->label('Alasan Gagal')
+                                ->required()
+                                ->maxLength(255)
+                                ->placeholder('Stok habis, barang rusak, dll.'),
+                        ])
+                        ->action(function (array $data, \Illuminate\Support\Collection $records): void {
+                            $n = $records->each->update([
+                                'processing_status' => 'FAILED',
+                                'failed_reason' => $data['failed_reason'],
+                            ])->count();
+                            \Filament\Notifications\Notification::make()
+                                ->title($n . ' pesanan ditandai Gagal')
+                                ->body('Alasan: ' . $data['failed_reason'])
+                                ->warning()->send();
+                        }),
+                    \Filament\Actions\Action::make('retryGagal')
+                        ->label('Retry Gagal')
+                        ->icon('heroicon-m-arrow-uturn-left')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Retry pesanan gagal?')
+                        ->modalDescription('Pesanan akan dikembalikan ke status Baru (PENDING) untuk diproses ulang.')
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $n = $records
+                                ->where('processing_status', 'FAILED')
+                                ->each->update(['processing_status' => 'PENDING', 'failed_reason' => null])
+                                ->count();
+                            \Filament\Notifications\Notification::make()
+                                ->title($n . ' pesanan dikembalikan ke Baru')
                                 ->success()->send();
                         }),
                     \Filament\Actions\Action::make('cetakSlip')
@@ -456,6 +609,49 @@ class OrdersTable
                                         ->url($url, shouldOpenInNewTab: true),
                                 ])
                                 ->send();
+                        }),
+                    \Filament\Actions\Action::make('cetakLabel')
+                        ->label('Cetak Label Pengiriman')
+                        ->icon('heroicon-m-document-arrow-down')
+                        ->color('gray')
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $records->load('store');
+                            $shipping = app(\App\Services\ShippingService::class);
+                            $urls = [];
+                            $errors = [];
+                            foreach ($records as $order) {
+                                if (! in_array($order->marketplace, ['SHOPEE', 'TIKTOK', 'TIKTOKTOKO'], true)) {
+                                    continue;
+                                }
+                                $result = $shipping->getShippingLabel($order);
+                                if ($result['success'] && $result['url']) {
+                                    $urls[] = ['label' => $order->external_no, 'url' => $result['url']];
+                                } else {
+                                    $errors[] = "{$order->external_no}: {$result['message']}";
+                                }
+                            }
+                            if ($urls) {
+                                $msg = count($urls) . ' label siap.';
+                                if ($errors) {
+                                    $msg .= ' Gagal: ' . implode('; ', $errors);
+                                }
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Label Pengiriman')
+                                    ->body($msg)
+                                    ->success()
+                                    ->actions(
+                                        collect($urls)->map(fn ($u) => \Filament\Notifications\Actions\Action::make('buka' . $u['label'])
+                                            ->label($u['label'])
+                                            ->link()
+                                            ->url($u['url'], shouldOpenInNewTab: true))->all()
+                                    )
+                                    ->send();
+                            } elseif ($errors) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Gagal mengambil label')
+                                    ->body(implode('; ', $errors))
+                                    ->danger()->send();
+                            }
                         }),
                     DeleteBulkAction::make(),
                 ]),

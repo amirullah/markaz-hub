@@ -225,4 +225,35 @@ class TokpedTikTokClient
     {
         return $this->shopCall($c, '/authorization/202309/shops');
     }
+
+    // =========================================================================
+    // SHIPPING
+    // =========================================================================
+
+    /**
+     * Ship order — kirim nomor resi ke TikTok Shop agar status marketplace
+     * berubah menjadi IN_TRANSIT.
+     *
+     * @param  string  $orderId       Order ID TikTok
+     * @param  string  $trackingNumber  Nomor resi
+     * @param  string  $carrierCode   Kode kurir (JNE, J&T, SICEPAT, dll)
+     */
+    public function shipOrder(MarketplaceConnection $c, string $orderId, string $trackingNumber, string $carrierCode): array
+    {
+        return $this->shopCall($c, '/fulfillment/202309/ship', [
+            'order_id_list' => [$orderId],
+            'tracking_number' => $trackingNumber,
+            'carrier_code' => strtoupper($carrierCode),
+        ], 'POST');
+    }
+
+    /**
+     * Get shipping document (label) PDF URL for printing.
+     */
+    public function getShippingDocument(MarketplaceConnection $c, string $orderId): array
+    {
+        return $this->shopCall($c, '/fulfillment/202309/shipping_document', [
+            'order_id' => $orderId,
+        ]);
+    }
 }

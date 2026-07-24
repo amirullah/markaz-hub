@@ -11,7 +11,7 @@ class SeedDummyData extends Command
     protected $signature = 'dummy:seed {email=markazvirtual@gmail.com}';
     protected $description = 'Isi data dummy untuk akun tertentu (toko, produk, pesanan, stok)';
 
-    private const PROCESSING = ['PENDING', 'PROCESSING', 'PACKED', 'SHIPPED'];
+    private const PROCESSING = ['PENDING', 'PROCESSING', 'PACKED', 'SHIPPED', 'FAILED'];
     private const MARKETPLACE_STATUS = ['SHOPEE' => ['PAID', 'SHIPPED', 'COMPLETED', 'CANCELLED'], 'TIKTOKTOKO' => ['PAID', 'SHIPPED', 'COMPLETED', 'RETURNED']];
     private const NAMES = ['Ahmad Fauzi', 'Siti Rahmawati', 'Budi Santoso', 'Dewi Lestari', 'Rudi Hermawan', 'Ani Nurhayati', 'Doni Prasetyo', 'Rina Marlina', 'Agus Wijaya', 'Mega Sari', 'Fitri Handayani', 'Hendra Gunawan', 'Lina Susanti', 'Rizky Pratama', 'Wulan Sari'];
 
@@ -219,6 +219,7 @@ class SeedDummyData extends Command
                 'tracking_number' => $procStatus === 'SHIPPED' ? 'RESI' . rand(100000, 999999) : null,
                 'courier' => $procStatus === 'SHIPPED' ? ['JNE', 'J&T', 'SiCepat'][array_rand([0 => 'JNE', 1 => 'J&T', 2 => 'SiCepat'])] : null,
                 'shipped_at' => $procStatus === 'SHIPPED' ? $date->copy()->addDays(rand(1, 3)) : null,
+                'failed_reason' => $procStatus === 'FAILED' ? 'Stok tidak mencukupi (data dummy)' : null,
                 'note' => rand(0, 3) > 2 ? 'Barang pecah belah' : null,
                 'created_at' => $date, 'updated_at' => $now,
             ];

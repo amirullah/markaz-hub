@@ -71,6 +71,12 @@ class OrderInfolist
                             ->color(fn ($state): string => match ($state) {
                                 'COMPLETED' => 'success', 'CANCELLED' => 'danger', 'RETURNED' => 'warning', 'SHIPPED' => 'info', default => 'gray',
                             }),
+                        TextEntry::make('processing_status')->label('Proses')->badge()
+                            ->formatStateUsing(fn ($state) => \App\Models\Order::processingStatusLabel($state))
+                            ->color(fn ($state) => \App\Models\Order::processingStatusColor($state)),
+                        TextEntry::make('failed_reason')->label('Alasan Gagal')
+                            ->visible(fn ($record): bool => $record->processing_status === 'FAILED' && filled($record->failed_reason))
+                            ->color('danger'),
                         TextEntry::make('fulfillment')->label('Pemenuhan')->badge()->color('gray')
                             ->formatStateUsing(fn ($state) => OrderForm::FULFILLMENT[$state] ?? $state)
                             ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship()),
@@ -79,6 +85,17 @@ class OrderInfolist
                             ->state(fn ($record): string => OrdersTable::statusLaba($record))
                             ->color(fn (string $state): string => OrdersTable::statusLabaColor($state))
                             ->icon(fn (string $state): ?string => OrdersTable::statusLabaIcon($state)),
+                    ]),
+
+                Section::make('Pengiriman')
+                    ->columns(3)
+                    ->visible(fn ($record): bool => filled($record->tracking_number) || $record->processing_status === 'SHIPPED')
+                    ->schema([
+                        TextEntry::make('tracking_number')->label('Nomor Resi')
+                            ->copyable()->copyMessage('Resi disalin')
+                            ->placeholder('—'),
+                        TextEntry::make('courier')->label('Ekspedisi')->placeholder('—'),
+                        TextEntry::make('shipped_at')->label('Dikirim')->dateTime('d M Y H:i')->placeholder('—'),
                     ]),
 
                 Section::make('Pendapatan')

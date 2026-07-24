@@ -36,3 +36,7 @@
 - Saat deploy ulang: jangan lupa `php artisan key:generate` jika APP_KEY baru
 - Production gunakan `APP_ENV=production, APP_DEBUG=false`
 - `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` jangan commit — hanya di .env server
+- `ShippingService` otomatis kirim resi ke Shopee/TikTok saat "Tandai Dikirim + Resi"
+  - Butuh `SHOPEE_PARTNER_ID`/`SHOPEE_PARTNER_KEY` dan/atau `TIKTOK_APP_KEY`/`TIKTOK_APP_SECRET` di `.env`
+  - Gagal kirim ke marketplace tidak menggagalkan update internal — error dicatat di notifikasi
+- Stock check dilakukan di "Tandai Diproses": bila stok kurang, proses dibatalkan dengan peringatan

@@ -3,18 +3,44 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\Order;
 use App\Services\AdminFeeEstimator;
 use App\Services\ProfitService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 
 class ListOrders extends ListRecords
 {
     protected static string $resource = OrderResource::class;
+
+    public function getTabs(): array
+    {
+        return [
+            'semua' => Tab::make('Semua')
+                ->badge(fn () => Order::query()->whereNotIn('status', ['CANCELLED', 'RETURNED'])->count()),
+            'baru' => Tab::make('Baru')
+                ->query(fn (Builder $q) => $q->where('processing_status', 'PENDING'))
+                ->badge(fn () => Order::query()->where('processing_status', 'PENDING')->count()),
+            'diproses' => Tab::make('Diproses')
+                ->query(fn (Builder $q) => $q->where('processing_status', 'PROCESSING'))
+                ->badge(fn () => Order::query()->where('processing_status', 'PROCESSING')->count()),
+            'dikemas' => Tab::make('Dikemas')
+                ->query(fn (Builder $q) => $q->where('processing_status', 'PACKED'))
+                ->badge(fn () => Order::query()->where('processing_status', 'PACKED')->count()),
+            'dikirim' => Tab::make('Dikirim')
+                ->query(fn (Builder $q) => $q->where('processing_status', 'SHIPPED'))
+                ->badge(fn () => Order::query()->where('processing_status', 'SHIPPED')->count()),
+            'gagal' => Tab::make('Gagal')
+                ->query(fn (Builder $q) => $q->where('processing_status', 'FAILED'))
+                ->badge(fn () => Order::query()->where('processing_status', 'FAILED')->count()),
+        ];
+    }
 
     /** Kartu total di ATAS tabel — mengikuti filter (dihitung dari query terfilter). */
     public function getSubheading(): string|Htmlable|null

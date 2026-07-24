@@ -162,8 +162,27 @@ class ShopeeClient
         return $body['response'] ?? $body;
     }
 
+    /**
+     * Get tracking number from Shopee after ship_order.
+     */
+    public function getTrackingNumber(MarketplaceConnection $c, string $orderSn): array
+    {
+        return $this->shopCall($c, '/api/v2/logistics/get_tracking_number', ['order_sn' => $orderSn]);
+    }
+
+    /**
+     * Get shipping document (label) PDF URL for printing.
+     */
+    public function getShippingDocument(MarketplaceConnection $c, string $orderSn): array
+    {
+        return $this->shopCall($c, '/api/v2/logistics/get_shipping_document_result', [
+            'order_sn' => $orderSn,
+            'document_type' => 'pdf',
+        ]);
+    }
+
     // =========================================================================
-    // ENDPOINT DATA (dipakai ShopeeSync)
+    // DATA (dipakai ShopeeSync)
     // =========================================================================
 
     /** Daftar order_sn dlm rentang waktu (cursor; Shopee membatasi rentang ±15 hari per panggilan). */
@@ -195,6 +214,27 @@ class ShopeeClient
     public function escrowDetail(MarketplaceConnection $c, string $orderSn): array
     {
         return $this->shopCall($c, '/api/v2/payment/get_escrow_detail', ['order_sn' => $orderSn]);
+    }
+
+    // =========================================================================
+    // SHIPPING
+    // =========================================================================
+
+    /**
+     * Ship order — kirim nomor resi ke Shopee agar status di marketplace
+     * berubah menjadi SHIPPED.
+     *
+     * @param  string  $orderSn     Order SN Shopee
+     * @param  string  $packageNumber  Nomor resi/paket
+     * @param  string  $pickupType  'pickup' atau 'dropoff' (default pickup)
+     */
+    public function shipOrder(MarketplaceConnection $c, string $orderSn, string $packageNumber, string $pickupType = 'pickup'): array
+    {
+        return $this->shopCall($c, '/api/v2/logistics/ship_order', [], [
+            'order_sn' => $orderSn,
+            'package_number' => $packageNumber,
+            'pickup' => ['pickup_type' => $pickupType],
+        ]);
     }
 
     /** Daftar item katalog (cursor offset). */

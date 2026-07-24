@@ -18,7 +18,7 @@ class Order extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['status', 'fulfillment', 'product_revenue', 'cogs', 'admin_fee', 'dropship_cost', 'note'])
+            ->logOnly(['status', 'fulfillment', 'product_revenue', 'cogs', 'admin_fee', 'dropship_cost', 'note', 'processing_status', 'failed_reason'])
             ->logOnlyDirty()->dontSubmitEmptyLogs()->useLogName('pesanan');
     }
 
@@ -28,7 +28,7 @@ class Order extends Model
         'order_date', 'buyer_name', 'product_revenue', 'shipping_charged_to_buyer', 'other_income',
         'cogs', 'admin_fee', 'shipping_cost_seller', 'voucher_seller_borne', 'dropship_cost', 'dropship_modal',
         'other_cost', 'income_verified', 'note',
-        'processing_status', 'tracking_number', 'courier', 'shipped_at',
+        'processing_status', 'tracking_number', 'courier', 'shipped_at', 'failed_reason',
     ];
 
     protected function casts(): array
@@ -173,7 +173,7 @@ class Order extends Model
         return app(ProfitService::class)->net($this);
     }
 
-    /** Scope: pesanan yang perlu diproses (belum dikirim). */
+    /** Scope: pesanan yang perlu diproses (belum dikirim dan tidak gagal). */
     public function scopePerluDiproses($query)
     {
         return $query->whereIn('processing_status', ['PENDING', 'PROCESSING', 'PACKED'])
@@ -193,6 +193,7 @@ class Order extends Model
             'PROCESSING' => 'Diproses',
             'PACKED' => 'Dikemas',
             'SHIPPED' => 'Dikirim',
+            'FAILED' => 'Gagal',
             default => '—',
         };
     }
@@ -204,6 +205,7 @@ class Order extends Model
             'PROCESSING' => 'info',
             'PACKED' => 'primary',
             'SHIPPED' => 'success',
+            'FAILED' => 'danger',
             default => 'gray',
         };
     }
