@@ -34,18 +34,26 @@
 - **Server**: Plesk, path `/var/www/vhosts/mkzs105/markazhub.mkzid.cloud/htdocs`
 - **exec()/shell_exec()**: Disabled di server — gunakan Artisan kernel langsung di PHP scripts
 
-## Masalah yang Belum Selesai / Blocker
-- **Semua fitur API marketplace** tidak bisa diuji sampai credentials diisi di `.env` server:
-  - `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_SERVICE_ID` dari TikTok Shop Partner Center
-  - `SHOPEE_PARTNER_ID`, `SHOPEE_PARTNER_KEY` dari Shopee Open Platform
-- Setelah isi `.env`: `php artisan config:cache` diperlukan
-- Cetak label pengiriman via API marketplace perlu koneksi aktif (credentials) untuk diuji
+## Blocker (butuh aksi user)
+- **Credentials marketplace** belum diisi di `.env` server:
+  - `SHOPEE_PARTNER_ID`, `SHOPEE_PARTNER_KEY` — daftar di https://open.shopee.com
+  - `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_SERVICE_ID` — daftar di https://partner.tiktokshop.com
+- **Deploy kode** ke server (pull git atau upload SFTP) + `php deploy.php`
+- **Testing API** — shipping & cetak label perlu koneksi aktif
 
-## Langkah Selanjutnya
-1. Isi credentials Shopee/TikTok di `.env` server → `config:cache`
-2. Deploy kode terbaru ke server
-3. Test pipeline: tandai Diproses → Dikemas → Dikirim + Resi → label otomatis
-4. Test shipping API — pastikan status marketplace berubah setelah kirim resi
+## Langkah Selanjutnya (Deploy ke Server)
+1. **Pull kode terbaru** di server (git pull) atau upload via SFTP
+2. **Jalankan deploy**:
+   ```
+   php deploy.php
+   ```
+   (otomatis: migrate --force, config:cache, route:cache, view:cache, storage:link)
+3. **Isi credentials marketplace** di `.env` server:
+   - `SHOPEE_PARTNER_ID`, `SHOPEE_PARTNER_KEY`
+   - `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_SERVICE_ID`
+4. **Jalankan ulang** `php deploy.php cache` (setelah isi .env)
+5. **Test pipeline**: Baru → Diproses → Dikemas → Dikirim + Resi → label
+6. **Hapus/lindungi** `deploy.php` dari server jika tidak diperlukan lagi
 
 ---
 ## Riwayat Sesi
@@ -105,6 +113,14 @@
 - **Cetak Label** action: per baris (dropdown ⋮) dan bulk action — dapatkan URL label dari marketplace, tampilkan notifikasi dengan tombol buka
 - **Auto-generate Resi**: `ShopeeClient::getTrackingNumber()` untuk ambil nomor resi dari Shopee setelah ship
 - Hasil: Fitur lengkap BigSeller-style — pipeline tabs, stock check, auto-ship ke marketplace, cetak label pengiriman
+
+### Sesi 8 — 24 Juli 2026
+- Dikerjakan: Finalisasi + deploy preparation
+- **Tandai Gagal** bulk action: manual fail dengan modal input alasan
+- **Stock status column** di tabel: icon check/warning per order + tooltip detail produk yang stoknya kurang
+- **deploy.php**: script artisan untuk server dengan `exec()` disabled — migrasi, cache, seed
+- **Commit + Push** ke origin/main: 14 files, 707 lines tambahan
+- Siap deploy ke production. Langkah selanjutnya: `php deploy.php` di server
 
 ### Sesi 7 — 24 Juli 2026
 - Dikerjakan: Pipeline completion — auto-fail, retry, failed_reason, dashboard
