@@ -792,7 +792,7 @@ class OrdersTable
                                     ->danger()->send();
                             }
                         }),
-                    \Filament\Tables\Actions\Action::make('cetakLabelResiBulk')
+                    \Filament\Actions\Action::make('cetakLabelResiBulk')
                         ->label('Cetak Label Resi')
                         ->icon('heroicon-m-truck')
                         ->color('gray')
