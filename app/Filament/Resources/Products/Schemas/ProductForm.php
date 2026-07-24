@@ -55,6 +55,23 @@ class ProductForm
                             ->prefix('Rp')
                             ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship()),
                     ]),
+                Section::make('Stok')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('stock')
+                            ->label('Stok Saat Ini')
+                            ->helperText('Jumlah barang tersedia. Berkurang otomatis saat pesanan ditandai Dikirim.')
+                            ->required()
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0),
+                        TextInput::make('min_stock')
+                            ->label('Stok Minimum')
+                            ->helperText('Peringatan stok menipis (0 = nonaktif).')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0),
+                    ]),
                 Section::make('Klasifikasi & Status')
                     ->columns(2)
                     ->schema([

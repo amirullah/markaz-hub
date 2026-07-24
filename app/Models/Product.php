@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use App\Services\CategoryClassifier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -30,6 +31,7 @@ class Product extends Model
     // organization_id sengaja TIDAK fillable — diisi otomatis oleh BelongsToOrganization.
     protected $fillable = [
         'sku', 'name', 'cost_price', 'dropship_cost', 'supplier_id', 'category_id', 'active',
+        'stock', 'min_stock',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -44,6 +46,8 @@ class Product extends Model
             'dropship_cost' => 'decimal:2',
             'cost_changed_at' => 'datetime',
             'active' => 'boolean',
+            'stock' => 'integer',
+            'min_stock' => 'integer',
         ];
     }
 
@@ -55,5 +59,22 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    /** Stok menipis (di bawah minimum). */
+    public function scopeStockMenipis($query): void
+    {
+        $query->where('min_stock', '>', 0)->whereColumn('stock', '<=', 'min_stock');
+    }
+
+    /** Stok habis. */
+    public function scopeStockHabis($query): void
+    {
+        $query->where('stock', '<=', 0);
     }
 }

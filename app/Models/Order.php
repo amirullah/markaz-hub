@@ -28,6 +28,7 @@ class Order extends Model
         'order_date', 'buyer_name', 'product_revenue', 'shipping_charged_to_buyer', 'other_income',
         'cogs', 'admin_fee', 'shipping_cost_seller', 'voucher_seller_borne', 'dropship_cost', 'dropship_modal',
         'other_cost', 'income_verified', 'note',
+        'processing_status', 'tracking_number', 'courier', 'shipped_at',
     ];
 
     protected function casts(): array
@@ -45,6 +46,7 @@ class Order extends Model
             'dropship_cost' => 'decimal:2',
             'dropship_modal' => 'decimal:2',
             'other_cost' => 'decimal:2',
+            'shipped_at' => 'datetime',
         ];
     }
 
@@ -169,5 +171,40 @@ class Order extends Model
     public function getNetAttribute(): float
     {
         return app(ProfitService::class)->net($this);
+    }
+
+    /** Scope: pesanan yang perlu diproses (belum dikirim). */
+    public function scopePerluDiproses($query)
+    {
+        return $query->whereIn('processing_status', ['PENDING', 'PROCESSING', 'PACKED'])
+            ->whereNotIn('status', ['CANCELLED', 'RETURNED']);
+    }
+
+    /** Scope: pesanan sudah dikirim. */
+    public function scopeSudahDikirim($query)
+    {
+        return $query->where('processing_status', 'SHIPPED');
+    }
+
+    public static function processingStatusLabel(?string $s): string
+    {
+        return match ($s) {
+            'PENDING' => 'Baru',
+            'PROCESSING' => 'Diproses',
+            'PACKED' => 'Dikemas',
+            'SHIPPED' => 'Dikirim',
+            default => '—',
+        };
+    }
+
+    public static function processingStatusColor(?string $s): string
+    {
+        return match ($s) {
+            'PENDING' => 'warning',
+            'PROCESSING' => 'info',
+            'PACKED' => 'primary',
+            'SHIPPED' => 'success',
+            default => 'gray',
+        };
     }
 }

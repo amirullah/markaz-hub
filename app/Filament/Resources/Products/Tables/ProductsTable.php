@@ -45,6 +45,13 @@ class ProductsTable
                     ->alignEnd()
                     ->description(fn ($record): ?string => \App\Models\Organization::currentUsesDropship() && (float) $record->dropship_cost > 0
                         ? 'Dropship Rp ' . number_format((float) $record->dropship_cost, 0, ',', '.') : null),
+                // Stok (dengan peringatan warna).
+                TextColumn::make('stock')
+                    ->label('Stok')
+                    ->alignEnd()
+                    ->sortable()
+                    ->color(fn ($record): string => $record->min_stock > 0 && $record->stock <= $record->min_stock ? 'danger' : 'gray')
+                    ->description(fn ($record): ?string => $record->min_stock > 0 ? 'Min ' . (int) $record->min_stock : null),
                 // Tanggal harga diubah (urut).
                 TextColumn::make('cost_changed_at')
                     ->label('Diubah')
@@ -186,6 +193,21 @@ class ProductsTable
                         }
 
                         return $ind;
+                    }),
+                // Stok menipis filter.
+                Filter::make('stok')
+                    ->schema([
+                        ToggleButtons::make('value')->label('Stok')->hiddenLabel()->inline()
+                            ->options(['semua' => 'Semua stok', 'menipis' => 'Stok Menipis', 'habis' => 'Stok Habis'])->default('semua'),
+                    ])
+                    ->query(fn ($query, array $data) => $query->when(
+                        ($v = $data['value'] ?? null) && $v !== 'semua',
+                        fn ($q) => $v === 'menipis' ? $q->stockMenipis() : $q->stockHabis(),
+                    ))
+                    ->indicateUsing(fn (array $data): ?string => match ($data['value'] ?? null) {
+                        'menipis' => 'Stok menipis',
+                        'habis' => 'Stok habis',
+                        default => null,
                     }),
             ])
             ->filtersLayout(\Filament\Tables\Enums\FiltersLayout::AboveContent)

@@ -24,6 +24,18 @@ class RiwayatPerubahan extends Page
      */
     public const CHANGELOG = [
         [
+            'date' => '24 Juli 2026',
+            'changes' => [
+                'BARU — INTEGRASI API TOKOPEDIA/TIKTOK (TikTok Shop Open Platform): toko Tokopedia/TikTok kini bisa DIHUBUNGKAN langsung via halaman izin resmi TikTok Shop (tanpa menyimpan password). Setelah terhubung: (a) pesanan & perubahan status masuk OTOMATIS realtime via push TikTok; (b) settlement/dana cair ditarik dari API → laba FINAL; (c) tombol "Sinkron Tokopedia/TikTok" & "Sinkron Katalog" di halaman Toko; (d) penyelaras terjadwal tiap 4 jam. Data API diproses lewat pipeline impor yang sama persis dengan file. Untuk aktif perlu kredensial app dari partner.tiktokshop.com. Unggah file manual tetap bisa dipakai kapan saja.',
+                'FIX — Login Google: bila sesi login habis saat proses OAuth (state tidak cocok), kini tampil pesan "Sesi login habis. Silakan klik Login dengan Google sekali lagi." — bukan sekadar "Login gagal".',
+                'FIX — Token Shopee lebih tangguh: bila refresh token kedaluwarsa saat sinkron, sistem menandai koneksi sebagai ERROR dan mencatat pesan kesalahan — tidak lagi menyebabkan error 500.',
+                'FIX — Keamanan: kredensial .env.production dihapus dari repositori (sudah di .gitignore). APP_KEY production sudah digenerate ulang (berbeda dengan local).',
+                'Database: foreign key constraints resmi ditambahkan ke tabel dropship_costs.organization_id → organizations(id) dan product_price_changes.organization_id → organizations(id).',
+                'FITUR PROSES PESANAN — menu Pesanan sekarang punya: (a) filter "Proses" (Perlu Diproses / Diproses / Dikemas / Dikirim) berupa pill cepat; (b) kolom badge status proses; (c) aksi massal Tandai Diproses, Tandai Dikemas, Tandai Dikirim + Input Resi (resi & kurir dipakai di packing slip); (d) Cetak Packing Slip (perorang & batch, pilih beberapa → notifikasi → buka tab cetak). Stok otomatis berkurang saat pesanan ditandai Dikirim.',
+                'FITUR STOK PRODUK — Produk sekarang punya: (a) kolom Stok + Min Stok di tabel (bisa diurutkan, filter Stok Menipis/Habis); (b) field stok di form edit produk; (c) tab "Riwayat Stok" di halaman detail produk untuk melihat mutasi (Masuk/Keluar/Penyesuaian); (d) tombol "Tambah Mutasi" untuk penyesuaian stok manual.',
+            ],
+        ],
+        [
             'date' => '5 Juli 2026',
             'changes' => [
                 'BARU — INTEGRASI SHOPEE API (realtime, tahap 1): toko Shopee kini bisa DIHUBUNGKAN langsung ke Shopee lewat halaman izin resmi (tanpa menyimpan password). Setelah terhubung: (a) pesanan & perubahan status masuk OTOMATIS realtime via push Shopee; (b) settlement/dana cair (pengganti file Laporan Penghasilan) ditarik dari API → laba langsung FINAL; (c) tombol "Sinkron Shopee" & "Sinkron Katalog" di halaman Toko; (d) penyelaras terjadwal tiap 4 jam menyusulkan yang terlewat + settlement yang baru cair. Data API diproses lewat pipeline impor yang sama persis dengan file (aturan gabung status, HPP historis, estimasi→final) — angka konsisten. Untuk aktif perlu kredensial app dari open.shopee.com (pendaftaran oleh pemilik akun; panduan tersedia). Unggah file manual tetap bisa dipakai kapan saja.',

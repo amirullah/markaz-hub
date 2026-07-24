@@ -118,6 +118,15 @@ class OrdersTable
                         return 'Laba final & akurat — biaya asli, modal, & rincian item lengkap.';
                     })
                     ->toggleable(),
+                // Status Proses (badge berwarna).
+                TextColumn::make('processing_status')
+                    ->label('Proses')
+                    ->badge()
+                    ->alignCenter()
+                    ->formatStateUsing(fn ($state): string => \App\Models\Order::processingStatusLabel($state))
+                    ->color(fn ($state): string => \App\Models\Order::processingStatusColor($state))
+                    ->sortable()
+                    ->toggleable(),
             ])
             // PENTING: items di-load TANPA kolom sku (hemat) — cuma butuh count & product_id untuk deskripsi.
             // Akibatnya, kode tabel/bulk yang butuh sku TIDAK boleh andalkan relasi ini ($record->items->...->sku
@@ -125,7 +134,7 @@ class OrdersTable
             // (lihat bulk "Salin SKU Produk"). itemsTableHtml() aman karena dipakai di halaman View (record terpisah).
             // store ikut di-eager-load: kolom "marketplace" menampilkan nama toko per baris —
             // tanpa ini jadi N+1 (1 query stores per baris; terasa di paginasi 250 + MySQL remote).
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['items:id,order_id,product_id', 'store:id,name,marketplace'])->withCount('items'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['items:id,order_id,product_id', 'items.product:id,stock', 'store:id,name,marketplace'])->withCount('items'))
             ->filters([
                 SelectFilter::make('store_id')
                     ->label('Toko')
@@ -231,6 +240,30 @@ class OrdersTable
                         ? 'Hanya pesanan janggal' : null)
                     // Janggal hanya relevan bila berjualan dropship (sesuai toggle Pengaturan).
                     ->visible(fn (): bool => \App\Models\Organization::currentUsesDropship()),
+                // Status Proses — pill sekali-klik.
+                Filter::make('proses')
+                    ->schema([
+                        ToggleButtons::make('value')->label('Proses')->hiddenLabel()
+                            ->inline()
+                            ->options(['semua' => 'Semua proses', 'perlu' => 'Perlu Diproses', 'diproses' => 'Diproses', 'dikemas' => 'Dikemas', 'dikirim' => 'Dikirim'])->default('semua'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        ($v = $data['value'] ?? null) && $v !== 'semua',
+                        fn (Builder $q) => match ($v) {
+                            'perlu' => $q->perluDiproses(),
+                            'diproses' => $q->where('processing_status', 'PROCESSING'),
+                            'dikemas' => $q->where('processing_status', 'PACKED'),
+                            'dikirim' => $q->sudahDikirim(),
+                            default => $q,
+                        },
+                    ))
+                    ->indicateUsing(fn (array $data): ?string => match ($data['value'] ?? null) {
+                        'perlu' => 'Perlu Diproses',
+                        'diproses' => 'Diproses',
+                        'dikemas' => 'Dikemas',
+                        'dikirim' => 'Dikirim',
+                        default => null,
+                    }),
                 // Periode — pill cepat sekali-klik.
                 Filter::make('periode')
                     ->schema([
@@ -330,6 +363,14 @@ class OrdersTable
             ->deferFilters(false)
             // Klik baris → Lihat. No. Pesanan dikecualikan (->disabledClick di kolomnya) agar bisa DISALIN, bukan navigasi.
             ->recordUrl(fn (\App\Models\Order $record): string => \App\Filament\Resources\Orders\OrderResource::getUrl('view', ['record' => $record]))
+            // Aksi per baris (dropdown ⋮).
+            ->recordActions([
+                \Filament\Actions\Action::make('cetakSlipRow')
+                    ->label('Cetak Packing Slip')
+                    ->icon('heroicon-m-printer')
+                    ->color('gray')
+                    ->url(fn (\App\Models\Order $record): string => route('print.packing-slip', $record), shouldOpenInNewTab: true),
+            ])
             // Opsi jumlah per halaman lebih besar → mudah centang banyak sekaligus. Untuk memilih
             // SEMUA hasil filter (lintas halaman), centang kotak header lalu klik "Pilih semua".
             ->paginated([25, 50, 100, 250])
@@ -337,6 +378,85 @@ class OrdersTable
                 BulkActionGroup::make([
                     \App\Filament\Actions\CopyBulkAction::make('salinNoPesanan', 'Salin No. Pesanan', 'external_no', 'No. Pesanan'),
                     \App\Filament\Actions\CopyBulkAction::make('salinSkuPesanan', 'Salin SKU Produk', fn ($records) => \App\Models\OrderItem::query()->whereIn('order_id', $records->pluck('id'))->pluck('sku'), 'SKU', 'Pesanan terpilih belum punya rincian produk. Impor "File Pesanan" untuk pesanan tersebut dulu agar SKU-nya tersedia.'),
+                    // === AKSI PROSES ===
+                    \Filament\Actions\Action::make('tandaiDiproses')
+                        ->label('Tandai Diproses')
+                        ->icon('heroicon-m-play')
+                        ->color('info')
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $n = $records->each->update(['processing_status' => 'PROCESSING'])->count();
+                            \Filament\Notifications\Notification::make()->title("{$n} pesanan ditandai Diproses")->success()->send();
+                        }),
+                    \Filament\Actions\Action::make('tandaiDikemas')
+                        ->label('Tandai Dikemas')
+                        ->icon('heroicon-m-square-3-stack-3d')
+                        ->color('primary')
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $n = $records->each->update(['processing_status' => 'PACKED'])->count();
+                            \Filament\Notifications\Notification::make()->title("{$n} pesanan ditandai Dikemas")->success()->send();
+                        }),
+                    \Filament\Actions\Action::make('tandaiDikirim')
+                        ->label('Tandai Dikirim + Resi')
+                        ->icon('heroicon-m-truck')
+                        ->color('success')
+                        ->form([
+                            \Filament\Forms\Components\TextInput::make('tracking_number')
+                                ->label('Nomor Resi')
+                                ->required()
+                                ->maxLength(100),
+                            \Filament\Forms\Components\TextInput::make('courier')
+                                ->label('Ekspedisi')
+                                ->placeholder('JNE, J&T, SiCepat, dll')
+                                ->maxLength(100),
+                        ])
+                        ->action(function (array $data, \Illuminate\Support\Collection $records): void {
+                            $now = now();
+                            $records->each(function (\App\Models\Order $order) use ($data, $now): void {
+                                $order->update([
+                                    'processing_status' => 'SHIPPED',
+                                    'tracking_number' => $data['tracking_number'],
+                                    'courier' => $data['courier'],
+                                    'shipped_at' => $now,
+                                ]);
+                                // Kurangi stok untuk tiap item yang punya SKU + product mapping.
+                                foreach ($order->items as $item) {
+                                    if ($item->product_id && (int) $item->qty > 0) {
+                                        $item->product->decrement('stock', (int) $item->qty);
+                                        \App\Models\StockMovement::create([
+                                            'organization_id' => $order->organization_id,
+                                            'product_id' => $item->product_id,
+                                            'type' => 'OUT',
+                                            'qty' => (int) $item->qty,
+                                            'reference' => $order->external_no,
+                                            'note' => 'Dikirim via ' . ($data['courier'] ?: '-'),
+                                        ]);
+                                    }
+                                }
+                            });
+                            \Filament\Notifications\Notification::make()
+                                ->title($records->count() . ' pesanan ditandai Dikirim')
+                                ->body('Resi: ' . $data['tracking_number'])
+                                ->success()->send();
+                        }),
+                    \Filament\Actions\Action::make('cetakSlip')
+                        ->label('Cetak Packing Slip')
+                        ->icon('heroicon-m-printer')
+                        ->color('gray')
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $ids = $records->pluck('id')->implode(',');
+                            $url = route('print.packing-slip.batch', ['ids' => $ids]);
+                            \Filament\Notifications\Notification::make()
+                                ->title('Packing Slip Siap Dicetak')
+                                ->body($records->count() . ' packing slip. Klik tombol di bawah.')
+                                ->success()
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('buka')
+                                        ->label('Buka Halaman Cetak')
+                                        ->button()
+                                        ->url($url, shouldOpenInNewTab: true),
+                                ])
+                                ->send();
+                        }),
                     DeleteBulkAction::make(),
                 ]),
             ]);
