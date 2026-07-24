@@ -40,7 +40,7 @@ function section(string $msg): void
 // === SCRIPT UTAMA ===
 
 section('DEPLOY MARKAZHUB');
-echo 'Waktu: ' . now()->format('Y-m-d H:i:s') . "\n\n";
+echo 'Waktu: ' . date('Y-m-d H:i:s') . "\n\n";
 
 switch ($cmd) {
     case 'migrate':
@@ -67,7 +67,7 @@ switch ($cmd) {
         run('Config cache', 'config:cache');
         run('Route cache', 'route:cache');
         run('View cache', 'view:cache');
-        section('Storage link', 'storage:link');
+        section('Storage link');
         try {
             Artisan::call('storage:link');
             echo Artisan::output() . "\n";

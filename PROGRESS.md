@@ -115,12 +115,16 @@
 - Hasil: Fitur lengkap BigSeller-style — pipeline tabs, stock check, auto-ship ke marketplace, cetak label pengiriman
 
 ### Sesi 8 — 24 Juli 2026
-- Dikerjakan: Finalisasi + deploy preparation
+- Dikerjakan: Finalisasi + fitur lanjutan + deploy preparation
 - **Tandai Gagal** bulk action: manual fail dengan modal input alasan
 - **Stock status column** di tabel: icon check/warning per order + tooltip detail produk yang stoknya kurang
 - **Input Resi Massal**: bulk action dengan textarea — format `NoPesanan|Resi|Kurir` per baris, auto-deduct stock + kirim ke marketplace API
 - **Dashboard widget**: 3 kartu pipeline — Perlu Diproses, Sedang Diproses, Gagal Diproses
 - **Cari Resi**: `tracking_number` ditambahkan ke searchable columns di tabel
+- **Export CSV**: header action — export hasil filter ke CSV (BOM UTF-8, includes kolom laba, tracking, dll)
+- **Invoice PDF**: print view per-order + batch (`/print/invoice/{order}` dan `/print/invoice/batch?ids=...`) dengan `window.print()`, record action (dropdown ⋮) dan bulk action
+- **Bugfix deploy.php**: `section()` typo (2 arg jadi 1), `now()` ganti `date()` (bootstrap belum penuh)
+- **Code polish**: pisah chained method per baris (rapikan `->label('X')->sortable()` dll)
 - **deploy.php**: script artisan untuk server dengan `exec()` disabled — migrasi, cache, seed
 - **Commit + Push** ke origin/main
 - Siap deploy ke production. Langkah selanjutnya: `php deploy.php` di server

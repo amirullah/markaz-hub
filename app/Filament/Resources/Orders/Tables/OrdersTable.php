@@ -49,14 +49,16 @@ class OrdersTable
                     ->sortable(),
                 // 2. Tanggal (atas) + status pesanan BERWARNA (bawah).
                 TextColumn::make('order_date')
-                    ->label('Tanggal')                    ->sortable()
+                    ->label('Tanggal')
+                    ->sortable()
                     ->formatStateUsing(fn ($state, \App\Models\Order $record): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
                         '<div>' . e($record->order_date?->translatedFormat('d M Y')) . '</div>'
                         . '<div style="margin-top:3px">' . self::statusBadge($record->status)->toHtml() . '</div>'
                     )),
                 // 3. "Toko" — channel (atas) + nama toko (bawah).
                 TextColumn::make('marketplace')
-                    ->label('Toko')                    ->badge()
+                    ->label('Toko')
+                    ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'SHOPEE' => 'Shopee',
                         'TIKTOKTOKO' => 'Tokopedia/TikTok',
@@ -68,7 +70,8 @@ class OrdersTable
                     ->description(fn (\App\Models\Order $record): string => $record->store?->name ?? '-'),
                 // 4. Omzet (atas) + pemenuhan BERWARNA (bawah).
                 TextColumn::make('product_revenue')
-                    ->label('Omzet')                    ->alignEnd()
+                    ->label('Omzet')
+                    ->alignEnd()
                     ->sortable()
                     ->formatStateUsing(fn ($state, \App\Models\Order $record): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
                         '<div>Rp ' . number_format((float) $state, 0, ',', '.') . '</div>'
@@ -76,7 +79,8 @@ class OrdersTable
                     )),
                 // 5. Laba (Rp).
                 TextColumn::make('profit')
-                    ->label('Laba')                    ->formatStateUsing(fn ($state, \App\Models\Order $record): string => (! empty($record->incompleteness()) ? '≈ ' : '') . 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                    ->label('Laba')
+                    ->formatStateUsing(fn ($state, \App\Models\Order $record): string => (! empty($record->incompleteness()) ? '≈ ' : '') . 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->weight('bold')
                     // Belum final (HPP/dropship/estimasi/settlement) → abu-abu + "≈": jangan terlihat laba pasti.
                     ->color(fn ($state, \App\Models\Order $record): string => ! empty($record->incompleteness()) ? 'gray' : ((float) $state < 0 ? 'danger' : 'success'))
@@ -86,7 +90,8 @@ class OrdersTable
                     ->alignEnd(),
                 // 6. Margin % — kolom sendiri agar BISA DIURUTKAN (klik header).
                 TextColumn::make('margin')
-                    ->label('Margin')                    ->alignEnd()
+                    ->label('Margin')
+                    ->alignEnd()
                     ->state(function (\App\Models\Order $record): ?float {
                         $omzet = (float) $record->product_revenue;
 
@@ -99,7 +104,8 @@ class OrdersTable
                     )),
                 // Status laba sebagai IKON ringkas (hemat lebar) — warna & arti tetap, detail di tooltip.
                 IconColumn::make('status_laba')
-                    ->label('Status Laba')                    ->alignCenter()
+                    ->label('Status Laba')
+                    ->alignCenter()
                     ->state(fn (\App\Models\Order $record): string => self::statusLaba($record))
                     ->icon(fn (string $state): string => self::statusLabaIcon($state) ?? 'heroicon-m-minus-small')
                     ->color(fn (string $state): string => self::statusLabaColor($state))
@@ -438,11 +444,44 @@ class OrdersTable
                                 ->danger()->send();
                         }
                     }),
+                \Filament\Actions\Action::make('cetakInvoiceRow')
+                    ->label('Cetak Invoice')
+                    ->icon('heroicon-m-document-text')
+                    ->color('gray')
+                    ->url(fn (\App\Models\Order $record): string => route('print.invoice', $record), shouldOpenInNewTab: true),
             ])
             // Opsi jumlah per halaman lebih besar → mudah centang banyak sekaligus. Untuk memilih
             // SEMUA hasil filter (lintas halaman), centang kotak header lalu klik "Pilih semua".
             ->paginated([25, 50, 100, 250])
             ->toolbarActions([
+                    \Filament\Tables\Actions\Action::make('exportCsv')
+                    ->label('Export CSV')
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('gray')
+                    ->action(function (\Illuminate\Database\Eloquent\Builder $query) {
+                        $rows = $query->get();
+                        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+                        $out = fopen($tmp, 'w');
+                        fwrite($out, "\xEF\xBB\xBF");
+                        fputcsv($out, [
+                            'No. Pesanan', 'Tgl Pesanan', 'Marketplace', 'Toko', 'Pembeli',
+                            'Status', 'Status Proses', 'Tracking', 'Kurir', 'Tgl Kirim',
+                            'Total', 'Laba', 'Fulfillment', 'Alasan Gagal',
+                        ]);
+                        $pf = app(\App\Services\ProfitService::class);
+                        foreach ($rows as $o) {
+                            fputcsv($out, [
+                                $o->external_no, $o->order_date?->format('Y-m-d'),
+                                $o->marketplace, $o->store?->name, $o->buyer_name,
+                                $o->status, $o->processing_status,
+                                $o->tracking_number, $o->courier, $o->shipped_at?->format('Y-m-d H:i'),
+                                $o->product_revenue, $pf->profit($o),
+                                $o->fulfillment, $o->failed_reason,
+                            ]);
+                        }
+                        fclose($out);
+                        return response()->download($tmp, 'pesanan-' . now()->format('Ymd-His') . '.csv')->deleteFileAfterSend();
+                    }),
                 BulkActionGroup::make([
                     \App\Filament\Actions\CopyBulkAction::make('salinNoPesanan', 'Salin No. Pesanan', 'external_no', 'No. Pesanan'),
                     \App\Filament\Actions\CopyBulkAction::make('salinSkuPesanan', 'Salin SKU Produk', fn ($records) => \App\Models\OrderItem::query()->whereIn('order_id', $records->pluck('id'))->pluck('sku'), 'SKU', 'Pesanan terpilih belum punya rincian produk. Impor "File Pesanan" untuk pesanan tersebut dulu agar SKU-nya tersedia.'),
@@ -676,6 +715,25 @@ class OrdersTable
                             \Filament\Notifications\Notification::make()
                                 ->title('Packing Slip Siap Dicetak')
                                 ->body($records->count() . ' packing slip. Klik tombol di bawah.')
+                                ->success()
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('buka')
+                                        ->label('Buka Halaman Cetak')
+                                        ->button()
+                                        ->url($url, shouldOpenInNewTab: true),
+                                ])
+                                ->send();
+                        }),
+                    \Filament\Actions\Action::make('cetakInvoice')
+                        ->label('Cetak Invoice')
+                        ->icon('heroicon-m-document-text')
+                        ->color('gray')
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $ids = $records->pluck('id')->implode(',');
+                            $url = route('print.invoice.batch', ['ids' => $ids]);
+                            \Filament\Notifications\Notification::make()
+                                ->title('Invoice Siap Dicetak')
+                                ->body($records->count() . ' invoice. Klik tombol di bawah.')
                                 ->success()
                                 ->actions([
                                     \Filament\Notifications\Actions\Action::make('buka')
