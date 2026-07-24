@@ -99,4 +99,17 @@ class Store extends Model
 
         return $c !== null && $c->isConnected();
     }
+
+    /** Koneksi API Tokopedia/TikTok milik toko ini (bila pernah dihubungkan). */
+    public function tikTokConnection(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MarketplaceConnection::class)->where('platform', 'TIKTOKTOKO');
+    }
+
+    public function tikTokConnected(): bool
+    {
+        $c = $this->tikTokConnection;
+
+        return $c !== null && $c->isConnected();
+    }
 }

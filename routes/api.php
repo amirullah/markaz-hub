@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Route;
  * API ber-versi untuk app mobile (Android/iOS). Auth via Sanctum (token).
  * Logika tetap di app/Services — controller/endpoint hanya lapisan tipis.
  */
-// Webhook push realtime dari Shopee (tanpa auth user; diverifikasi via signature HMAC).
+// Webhook push realtime dari marketplace (tanpa auth user; diverifikasi via signature HMAC).
 Route::post('/shopee/push', [\App\Http\Controllers\ShopeeWebhookController::class, 'handle'])->name('shopee.push');
+Route::post('/tokpedtiktok/push', [\App\Http\Controllers\TokpedTikTokWebhookController::class, 'handle'])->name('tokpedtiktok.push');
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
     // Cek kesehatan (publik)

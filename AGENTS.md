@@ -5,10 +5,10 @@
 > konteks proyek meskipun sesi percakapan sebelumnya sudah ditutup.
 
 ## Ringkasan Proyek
-- **Nama proyek**: Layanan hosting sendiri di VPS
+- **Nama proyek**: Hosting sendiri — MarkazHub (manajemen toko marketplace multi-tenant)
 - **Domain/subdomain**: markazhub.mkzid.cloud
-- **Stack**: PHP (Laravel), deploy langsung ke VPS (tanpa Docker)
-- **Metode deploy**: otomatis via AI agent (OpenClaw)
+- **Stack**: PHP 8.3 (Laravel 11), MySQL, Nginx, deploy langsung ke VPS (tanpa Docker)
+- **Metode deploy**: Upload via SFTP; pull via git; konfigurasi langsung di server
 
 ## Aturan Kerja untuk Agent
 1. Sebelum mulai kerja, baca `PROGRESS.md` untuk tahu status terakhir.
@@ -33,3 +33,6 @@
 - Tulis instruksi/preferensi tambahan di sini kalau muncul di tengah
   jalan (misalnya "selalu pakai queue driver X", "jangan restart
   service Y otomatis").
+- Saat deploy ulang: jangan lupa `php artisan key:generate` jika APP_KEY baru
+- Production gunakan `APP_ENV=production, APP_DEBUG=false`
+- `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` jangan commit — hanya di .env server

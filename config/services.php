@@ -49,4 +49,13 @@ return [
         'env' => env('SHOPEE_ENV', 'test'), // test (sandbox) | live
     ],
 
+    // TikTok Shop Open Platform (partner.tiktokshop.com) — mencakup Tokopedia & TikTok Shop.
+    // Daftar di Partner Center → buat App → dapatkan App Key & App Secret.
+    'tokpedtiktok' => [
+        'app_key' => env('TIKTOK_APP_KEY'),
+        'app_secret' => env('TIKTOK_APP_SECRET'),
+        'service_id' => env('TIKTOK_SERVICE_ID'),
+        'env' => env('TIKTOK_ENV', 'sandbox'), // sandbox | live
+    ],
+
 ];

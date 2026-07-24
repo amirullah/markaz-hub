@@ -15,8 +15,8 @@ class MarketplaceConnection extends Model
     use BelongsToOrganization;
 
     protected $fillable = [
-        'store_id', 'platform', 'shop_id', 'access_token', 'refresh_token',
-        'access_expires_at', 'authorized_at', 'last_synced_at', 'status', 'last_error',
+        'store_id', 'platform', 'shop_id', 'shop_cipher', 'access_token', 'refresh_token',
+        'access_expires_at', 'refresh_token_expires_at', 'authorized_at', 'last_synced_at', 'status', 'last_error',
     ];
 
     protected function casts(): array
@@ -26,6 +26,7 @@ class MarketplaceConnection extends Model
             'access_token' => 'encrypted',
             'refresh_token' => 'encrypted',
             'access_expires_at' => 'datetime',
+            'refresh_token_expires_at' => 'datetime',
             'authorized_at' => 'datetime',
             'last_synced_at' => 'datetime',
         ];
@@ -44,6 +45,11 @@ class MarketplaceConnection extends Model
     /** Token akses hampir kedaluwarsa (perlu refresh sebelum dipakai)? */
     public function tokenStale(): bool
     {
+        if ($this->platform === 'TIKTOKTOKO') {
+            // TikTok Shop: access_token 7 hari — refresh jika < 1 hari lagi
+            return ! $this->access_expires_at || now()->addDay()->gte($this->access_expires_at);
+        }
+        // Shopee: access_token 4 jam — refresh jika < 5 menit lagi
         return ! $this->access_expires_at || now()->addMinutes(5)->gte($this->access_expires_at);
     }
 }
