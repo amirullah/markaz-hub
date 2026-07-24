@@ -796,6 +796,7 @@ class OrdersTable
                         ->label('Cetak Label Resi')
                         ->icon('heroicon-m-truck')
                         ->color('gray')
+                        ->accessSelectedRecords()
                         ->url(fn (\Illuminate\Support\Collection $records): string => route('print.shipping-label.batch', [
                             'ids' => $records->pluck('id')->join(','),
                         ]), shouldOpenInNewTab: true),
