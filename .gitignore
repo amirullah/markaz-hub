@@ -32,3 +32,4 @@ Thumbs.db
 /contoh file/
 .claude/settings.local.json
 .claude/launch.json
+.env.server.local

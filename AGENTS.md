@@ -7,7 +7,7 @@
 ## Ringkasan Proyek
 - **Nama proyek**: Hosting sendiri — MarkazHub (manajemen toko marketplace multi-tenant)
 - **Domain/subdomain**: markazhub.mkzid.cloud
-- **Stack**: PHP 8.3 (Laravel 11), MySQL, Nginx, deploy langsung ke VPS (tanpa Docker)
+- **Stack**: PHP 8.4 (Laravel 13 / Filamen v5), MySQL, Nginx, deploy langsung ke VPS (tanpa Docker)
 - **Metode deploy**: Upload via SFTP; pull via git; konfigurasi langsung di server
 
 ## Aturan Kerja untuk Agent
@@ -23,11 +23,17 @@
    supaya riwayat bisa dibaca ulang tanpa perlu context percakapan lama.
 
 ## Informasi Server (isi manual, jangan commit kalau ada kredensial)
-- IP VPS: `_isi_`
-- OS: `_isi_`
-- Web server: `_isi_ (Nginx/Apache)`
-- PHP version: `_isi_`
-- Path deploy: `_isi_`
+- Host: `markazhub.mkzid.cloud` (IP terresolve otomatis)
+- Port: 22
+- User: `mkzs105`
+- OS: Linux (custom VPS)
+- Web server: Nginx
+- PHP version: 8.4.23 (FPM pool: `mkz-mkzs105.sock`)
+- Path deploy: `/var/www/vhosts/mkzs105/markazhub.mkzid.cloud/htdocs`
+- SSH key: `~/.ssh/mkz_vps` (root access)
+- DB name: `mkz105`
+- DB user: `mkz105`
+- Git remote: `https://github.com/amirullah/markaz-hub.git`
 
 ## Catatan Lain
 - Tulis instruksi/preferensi tambahan di sini kalau muncul di tengah
