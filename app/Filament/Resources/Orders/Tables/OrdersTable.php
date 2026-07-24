@@ -40,7 +40,7 @@ class OrdersTable
                     ->label('No. Pesanan')
                     ->disabledClick()
                     ->weight('bold')
-                    ->searchable(['external_no', 'buyer_name'])
+                    ->searchable(['external_no', 'buyer_name', 'tracking_number'])
                     ->copyable()
                     ->copyMessage('No. pesanan disalin')
                     ->copyMessageDuration(1500)

@@ -116,6 +116,23 @@ class StatsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($belumFinal > 0 ? 'warning' : 'success')
                 ->url($ordersUrl(['status_laba' => ['value' => 'belum_final']])),
+            // === PIPELINE PROSES ===
+            Stat::make('Perlu Diproses', number_format(Order::query()->where('processing_status', 'PENDING')->count(), 0, ',', '.'))
+                ->description('pesanan baru menunggu diproses')
+                ->descriptionIcon('heroicon-m-inbox')
+                ->color('warning')
+                ->url(\App\Filament\Resources\Orders\OrderResource::getUrl('index') . '?tab=baru'),
+            Stat::make('Sedang Diproses', number_format(
+                Order::query()->whereIn('processing_status', ['PROCESSING', 'PACKED'])->count(), 0, ',', '.'))
+                ->description('diproses & dikemas')
+                ->descriptionIcon('heroicon-m-arrow-path')
+                ->color('info')
+                ->url(\App\Filament\Resources\Orders\OrderResource::getUrl('index') . '?tab=diproses'),
+            Stat::make('Gagal Diproses', number_format(Order::query()->where('processing_status', 'FAILED')->count(), 0, ',', '.'))
+                ->description('perlu retry atau perbaiki stok')
+                ->descriptionIcon('heroicon-m-x-circle')
+                ->color(Order::query()->where('processing_status', 'FAILED')->count() > 0 ? 'danger' : 'success')
+                ->url(\App\Filament\Resources\Orders\OrderResource::getUrl('index') . '?tab=gagal'),
         ];
     }
 
