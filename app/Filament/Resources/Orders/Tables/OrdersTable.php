@@ -454,12 +454,12 @@ class OrdersTable
             // SEMUA hasil filter (lintas halaman), centang kotak header lalu klik "Pilih semua".
             ->paginated([25, 50, 100, 250])
             ->toolbarActions([
-                    \Filament\Tables\Actions\Action::make('exportCsv')
+                    \Filament\Actions\Action::make('exportCsv')
                     ->label('Export CSV')
                     ->icon('heroicon-m-arrow-down-tray')
                     ->color('gray')
-                    ->action(function (\Illuminate\Database\Eloquent\Builder $query) {
-                        $rows = $query->get();
+                    ->action(function (\Filament\Tables\Contracts\HasTable $livewire) {
+                        $rows = $livewire->getTableQueryForExport()->get();
                         $tmp = tempnam(sys_get_temp_dir(), 'csv');
                         $out = fopen($tmp, 'w');
                         fwrite($out, "\xEF\xBB\xBF");
