@@ -554,6 +554,81 @@ class OrdersTable
                                 ->body('Resi: ' . $data['tracking_number'])
                                 ->success()->send();
                         }),
+                    \Filament\Actions\Action::make('inputResiMassal')
+                        ->label('Input Resi Massal')
+                        ->icon('heroicon-m-document-text')
+                        ->color('gray')
+                        ->form([
+                            \Filament\Forms\Components\Textarea::make('resi_list')
+                                ->label('Daftar Resi')
+                                ->required()
+                                ->rows(10)
+                                ->helperText('Format: NoPesanan|Resi|Kurir (satu per baris). Contoh: SHOP-001|RESI123|JNE')
+                                ->placeholder('SHOP-240701-0001-abc12|RESI123456|JNE' . "\n" . 'SHOP-240701-0002-def34|RESI789012|J&T'),
+                            \Filament\Forms\Components\TextInput::make('courier_default')
+                                ->label('Kurir Default (opsional)')
+                                ->placeholder('JNE, J&T, SiCepat — dipakai bila kurir tidak disebut di baris'),
+                        ])
+                        ->action(function (array $data, \Illuminate\Support\Collection $records): void {
+                            $lookup = $records->keyBy('external_no');
+                            $lines = explode("\n", str_replace("\r", '', $data['resi_list']));
+                            $ok = 0;
+                            $errors = [];
+                            $now = now();
+                            $shipping = app(\App\Services\ShippingService::class);
+
+                            foreach ($lines as $line) {
+                                $line = trim($line);
+                                if ($line === '') continue;
+                                $parts = explode('|', $line);
+                                $extNo = trim($parts[0] ?? '');
+                                $resi = trim($parts[1] ?? '');
+                                $kurir = trim($parts[2] ?? '') ?: ($data['courier_default'] ?? '');
+                                if (! $extNo || ! $resi) {
+                                    $errors[] = "Baris tidak valid: {$line}";
+                                    continue;
+                                }
+                                $order = $lookup->get($extNo);
+                                if (! $order) {
+                                    $errors[] = "{$extNo}: tidak ditemukan di seleksi";
+                                    continue;
+                                }
+                                $order->update([
+                                    'processing_status' => 'SHIPPED',
+                                    'tracking_number' => $resi,
+                                    'courier' => $kurir,
+                                    'shipped_at' => $now,
+                                    'failed_reason' => null,
+                                ]);
+                                foreach ($order->items as $item) {
+                                    if ($item->product_id && (int) $item->qty > 0) {
+                                        $item->product->decrement('stock', (int) $item->qty);
+                                        \App\Models\StockMovement::create([
+                                            'organization_id' => $order->organization_id,
+                                            'product_id' => $item->product_id,
+                                            'type' => 'OUT',
+                                            'qty' => (int) $item->qty,
+                                            'reference' => $order->external_no,
+                                            'note' => 'Dikirim via ' . ($kurir ?: '-') . ' (massal)',
+                                        ]);
+                                    }
+                                }
+                                if (in_array($order->marketplace, ['SHOPEE', 'TIKTOK', 'TIKTOKTOKO'], true)) {
+                                    $result = $shipping->ship($order);
+                                    if (! $result['success']) {
+                                        $errors[] = "{$extNo}: {$result['message']}";
+                                    }
+                                }
+                                $ok++;
+                            }
+                            $msg = "{$ok} pesanan dikirim";
+                            if ($errors) {
+                                $msg .= '. Error: ' . implode('; ', array_slice($errors, 0, 10));
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title($msg)
+                                ->success()->send();
+                        }),
                     \Filament\Actions\Action::make('tandaiGagal')
                         ->label('Tandai Gagal')
                         ->icon('heroicon-m-x-circle')

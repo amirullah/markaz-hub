@@ -118,10 +118,11 @@
 - Dikerjakan: Finalisasi + deploy preparation
 - **Tandai Gagal** bulk action: manual fail dengan modal input alasan
 - **Stock status column** di tabel: icon check/warning per order + tooltip detail produk yang stoknya kurang
+- **Input Resi Massal**: bulk action dengan textarea — format `NoPesanan|Resi|Kurir` per baris, auto-deduct stock + kirim ke marketplace API
 - **Dashboard widget**: 3 kartu pipeline — Perlu Diproses, Sedang Diproses, Gagal Diproses
 - **Cari Resi**: `tracking_number` ditambahkan ke searchable columns di tabel
 - **deploy.php**: script artisan untuk server dengan `exec()` disabled — migrasi, cache, seed
-- **Commit + Push** ke origin/main: 14 files, 707 lines tambahan
+- **Commit + Push** ke origin/main
 - Siap deploy ke production. Langkah selanjutnya: `php deploy.php` di server
 
 ### Sesi 7 — 24 Juli 2026
