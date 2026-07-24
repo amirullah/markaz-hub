@@ -28,7 +28,7 @@ class LacakPengiriman extends Page implements HasTable
 
     protected static ?int $navigationSort = 2;
 
-    protected static string $view = 'filament.pages.lacak-pengiriman';
+    protected string $view = 'filament.pages.lacak-pengiriman';
 
     public function table(Table $table): Table
     {
